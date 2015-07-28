@@ -12,7 +12,15 @@ var data map[string]string = map[string]string{}
 
 func Get(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	key := params.ByName("key")
-	fmt.Fprint(w, data[key])
+	value, ok := data[key]
+
+	if !ok {
+		w.Header().Set("Status", "404")
+		fmt.Fprint(w, "Not found")
+		return
+	} else {
+		fmt.Fprint(w, value)
+	}
 }
 
 func Put(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
