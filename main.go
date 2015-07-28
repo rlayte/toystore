@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/julienschmidt/httprouter"
 )
@@ -30,11 +31,12 @@ func Put(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 }
 
 func main() {
+	port := os.Args[1]
 	router := httprouter.New()
 
 	router.GET("/:key", Get)
 	router.POST("/:key", Put)
 
-	log.Println("Running server on port 3000")
-	log.Fatal(http.ListenAndServe(":3000", router))
+	log.Println("Running server on port", port)
+	log.Fatal(http.ListenAndServe(":"+port, router))
 }
