@@ -14,14 +14,32 @@ import (
 type Toystore struct {
 	dive *dive.Node
 	port int
+	data Store
+}
+
+type Store interface {
+	Get(string) (string, bool)
+	Put(string, string)
+}
+
+type MemoryStore struct {
 	data map[string]string
+}
+
+func (m MemoryStore) Get(key string) (string, bool) {
+	value, ok := m.data[key]
+	return value, ok
+}
+
+func (m MemoryStore) Put(key string, value string) {
+	m.data[key] = value
 }
 
 func (t *Toystore) Get(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	key := params.ByName("key")
-	value, ok := t.data[key]
+	value, ok := t.data.Get(key)
 
-	log.Printf("GET - %s : %s", key, value, t.dive.Members)
+	log.Printf("GET - %s : %s", key, value)
 
 	if !ok {
 		w.Header().Set("Status", "404")
@@ -35,7 +53,7 @@ func (t *Toystore) Get(w http.ResponseWriter, r *http.Request, params httprouter
 func (t *Toystore) Put(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	key := params.ByName("key")
 	value := r.FormValue("data")
-	t.data[key] = value
+	t.data.Put(key, value)
 }
 
 func main() {
@@ -53,7 +71,7 @@ func main() {
 	t := Toystore{
 		dive: dive.NewNode(port+10, seed),
 		port: port,
-		data: map[string]string{},
+		data: MemoryStore{map[string]string{}},
 	}
 
 	router := httprouter.New()
