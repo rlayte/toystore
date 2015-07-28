@@ -5,8 +5,10 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 
 	"github.com/julienschmidt/httprouter"
+	"github.com/rlayte/dive"
 )
 
 var data map[string]string = map[string]string{}
@@ -31,12 +33,18 @@ func Put(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 }
 
 func main() {
-	port := os.Args[1]
+	port, err := strconv.Atoi(os.Args[1])
+
+	if err != nil {
+		panic(err)
+	}
+
 	router := httprouter.New()
+	dive.NewNode(port+10, "")
 
 	router.GET("/:key", Get)
 	router.POST("/:key", Put)
 
 	log.Println("Running server on port", port)
-	log.Fatal(http.ListenAndServe(":"+port, router))
+	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), router))
 }
