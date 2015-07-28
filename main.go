@@ -11,11 +11,17 @@ import (
 	"github.com/rlayte/dive"
 )
 
-var data map[string]string = map[string]string{}
+type Toystore struct {
+	dive *dive.Node
+	port int
+	data map[string]string
+}
 
-func Get(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (t *Toystore) Get(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	key := params.ByName("key")
-	value, ok := data[key]
+	value, ok := t.data[key]
+
+	log.Printf("GET - %s : %s", key, value, t.dive.Members)
 
 	if !ok {
 		w.Header().Set("Status", "404")
@@ -26,24 +32,34 @@ func Get(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	}
 }
 
-func Put(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (t *Toystore) Put(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	key := params.ByName("key")
 	value := r.FormValue("data")
-	data[key] = value
+	t.data[key] = value
 }
 
 func main() {
+	var seed string
 	port, err := strconv.Atoi(os.Args[1])
+
+	if port != 3000 {
+		seed = ":3010"
+	}
 
 	if err != nil {
 		panic(err)
 	}
 
-	router := httprouter.New()
-	dive.NewNode(port+10, "")
+	t := Toystore{
+		dive: dive.NewNode(port+10, seed),
+		port: port,
+		data: map[string]string{},
+	}
 
-	router.GET("/:key", Get)
-	router.POST("/:key", Put)
+	router := httprouter.New()
+
+	router.GET("/:key", t.Get)
+	router.POST("/:key", t.Put)
 
 	log.Println("Running server on port", port)
 	log.Fatal(http.ListenAndServe(fmt.Sprintf(":%d", port), router))
