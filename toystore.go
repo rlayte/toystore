@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
+	"github.com/Charlesetc/dive"
 	"github.com/julienschmidt/httprouter"
-	"github.com/rlayte/dive"
 )
 
 type Toystore struct {
@@ -52,6 +53,8 @@ func (t *Toystore) Serve() {
 }
 
 func New(port int, store Store, seed string) *Toystore {
+	dive.PingInterval = time.Second
+
 	return &Toystore{
 		dive: dive.NewNode(port+10, seed),
 		port: port,
