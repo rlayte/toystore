@@ -6,7 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Charlesetc/dive"
+	"github.com/charlesetc/circle"
+	"github.com/charlesetc/dive"
 	"github.com/julienschmidt/httprouter"
 )
 
@@ -14,6 +15,7 @@ type Toystore struct {
 	dive *dive.Node
 	port int
 	data Store
+	ring *circle.Circle
 }
 
 type Store interface {
@@ -21,11 +23,26 @@ type Store interface {
 	Put(string, string)
 }
 
+func (t *Toystore) updateMembers() {
+	addresses := []string{t.dive.Address()}
+
+	for _, member := range t.dive.Members {
+		addresses = append(addresses, member.Address)
+	}
+
+	t.ring = circle.CircleFromList(addresses)
+}
+
 func (t *Toystore) Get(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	t.updateMembers()
+
 	key := params.ByName("key")
 	value, ok := t.data.Get(key)
+	lookup := t.ring.KeyAddress([]byte(key))
+	address, _ := lookup()
 
-	log.Printf("GET - %s : %s", key, value, t.dive.Members)
+	log.Printf("GET - %s : %s", key, value)
+	log.Println("Key address", string(address), t.ring)
 
 	if !ok {
 		w.Header().Set("Status", "404")
@@ -37,8 +54,13 @@ func (t *Toystore) Get(w http.ResponseWriter, r *http.Request, params httprouter
 }
 
 func (t *Toystore) Put(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	t.updateMembers()
+
 	key := params.ByName("key")
 	value := r.FormValue("data")
+
+	log.Printf("PUT - %s : %s", key, value)
+
 	t.data.Put(key, value)
 }
 
