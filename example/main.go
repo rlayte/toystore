@@ -32,6 +32,6 @@ func main() {
 		panic(err)
 	}
 
-	t := toystore.New(port, &MemoryStore{map[string]string{}}, seed)
+	t := toystore.New(port, &MemoryStore{map[string]string{}}, seed, toystore.ToystoreMetaData{Address: ":3000"})
 	t.Serve()
 }
