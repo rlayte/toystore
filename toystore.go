@@ -20,7 +20,8 @@ type Toystore struct {
 }
 
 type ToystoreMetaData struct {
-	Address string
+	Address    string
+	RPCAddress string
 }
 
 type Store interface {
@@ -29,12 +30,12 @@ type Store interface {
 }
 
 func (t *Toystore) updateMembers() {
-	addresses := []string{t.address()}
+	addresses := []string{t.rpcAddress()}
 
 	for _, member := range t.dive.Members {
 		if member.MetaData != nil {
 			metaData := member.MetaData.(ToystoreMetaData)
-			addresses = append(addresses, metaData.Address)
+			addresses = append(addresses, metaData.RPCAddress)
 		}
 	}
 
@@ -45,18 +46,25 @@ func (t *Toystore) address() string {
 	return fmt.Sprintf(":%d", t.port)
 }
 
+func (t *Toystore) rpcAddress() string {
+	return fmt.Sprintf(":%d", t.port+20)
+}
+
 func (t *Toystore) Get(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	t.updateMembers()
 
 	key := params.ByName("key")
-	value, ok := t.data.Get(key)
 	lookup := t.ring.KeyAddress([]byte(key))
 	address, _ := lookup()
+	var value string
+	var ok bool
 
-	log.Printf("GET - %s : %s", key, value, address)
-
-	if string(address) != t.address() {
-		log.Println("PUT - Forwarding to", string(address))
+	if string(address) != t.rpcAddress() {
+		log.Printf("%s forwarding GET request to %s. %s", t.address(), address, key)
+		value, ok = GetCall(string(address), key)
+	} else {
+		log.Printf("%s handling GET request. %s", t.address(), key)
+		value, ok = t.data.Get(key)
 	}
 
 	if !ok {
@@ -76,13 +84,13 @@ func (t *Toystore) Put(w http.ResponseWriter, r *http.Request, params httprouter
 	lookup := t.ring.KeyAddress([]byte(key))
 	address, _ := lookup()
 
-	if string(address) != t.address() {
-		log.Println("PUT - Forwarding to", string(address))
+	if string(address) != t.rpcAddress() {
+		log.Printf("%s forwarding PUT request to %s. %s:%s", t.address(), address, key, value)
+		PutCall(string(address), key, value)
+	} else {
+		log.Printf("%s handling GET request. %s:%s", t.address(), key, value)
+		t.data.Put(key, value)
 	}
-
-	log.Printf("PUT - %s : %s", key, value, address, t.ring)
-
-	t.data.Put(key, value)
 }
 
 func (t *Toystore) Serve() {
@@ -90,6 +98,8 @@ func (t *Toystore) Serve() {
 
 	router.GET("/:key", t.Get)
 	router.POST("/:key", t.Put)
+
+	go ServeRPC(t)
 
 	log.Println("Running server on port", t.port)
 	log.Fatal(http.ListenAndServe(t.address(), router))
@@ -103,7 +113,7 @@ func New(port int, store Store, seed string, seedMeta interface{}) *Toystore {
 
 	dive.PingInterval = time.Second
 	n := dive.NewNode(port+10, &dive.BasicRecord{Address: seed, MetaData: seedMeta})
-	n.MetaData = ToystoreMetaData{t.address()}
+	n.MetaData = ToystoreMetaData{t.address(), t.rpcAddress()}
 	gob.RegisterName("ToystoreMetaData", n.MetaData)
 
 	t.dive = n
