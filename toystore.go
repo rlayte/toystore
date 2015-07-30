@@ -70,6 +70,11 @@ func (t *Toystore) CoordinateGet(key string) (string, bool) {
 	for address, err := lookup(); err == nil; address, err = lookup() {
 		if string(address) != t.rpcAddress() {
 			log.Printf("%s sending GET request to %s.", t.address(), address)
+			value, ok = GetCall(string(address), key)
+
+			if ok {
+				reads++
+			}
 		} else {
 			log.Printf("Coordinator %s retrieving %s.", t.address(), key)
 			value, ok = t.data.Get(key)
