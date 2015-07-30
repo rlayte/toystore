@@ -1,0 +1,26 @@
+panic: string value is not available for this reply type [recovered]
+	panic: string value is not available for this reply type
+
+goroutine 6 [running]:
+testing.func·006()
+	/home/charles/.gvm/gos/go1.4/src/testing/testing.go:441 +0x181
+github.com/rlayte/toystore/adapters/redis.RedisStore.Get(0xc208010230, 0x5c9cb0, 0x3, 0x0, 0x0, 0x30df969c)
+	/home/charles/.gvm/pkgsets/go1.4/global/src/github.com/rlayte/toystore/adapters/redis/redis.go:16 +0x192
+github.com/rlayte/toystore/adapters/redis.TestFailure(0xc208062090)
+	/home/charles/.gvm/pkgsets/go1.4/global/src/github.com/rlayte/toystore/adapters/redis/redis_test.go:29 +0x67
+testing.tRunner(0xc208062090, 0x6ab2f8)
+	/home/charles/.gvm/gos/go1.4/src/testing/testing.go:447 +0xbf
+created by testing.RunTests
+	/home/charles/.gvm/gos/go1.4/src/testing/testing.go:555 +0xa8b
+
+goroutine 1 [chan receive]:
+testing.RunTests(0x617038, 0x6ab2e0, 0x2, 0x2, 0x88dda905795fc301)
+	/home/charles/.gvm/gos/go1.4/src/testing/testing.go:556 +0xad6
+testing.(*M).Run(0xc20802e140, 0x6b7660)
+	/home/charles/.gvm/gos/go1.4/src/testing/testing.go:485 +0x6c
+main.main()
+	github.com/rlayte/toystore/adapters/redis/_test/_testmain.go:54 +0x1d5
+
+goroutine 17 [syscall, locked to thread]:
+runtime.goexit()
+	/home/charles/.gvm/gos/go1.4/src/runtime/asm_amd64.s:2232 +0x1

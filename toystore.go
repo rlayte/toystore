@@ -69,7 +69,7 @@ func (t *Toystore) Get(w http.ResponseWriter, r *http.Request, params httprouter
 
 	if !ok {
 		w.Header().Set("Status", "404")
-		fmt.Fprint(w, "Not found")
+		fmt.Fprint(w, "Not found\n")
 		return
 	} else {
 		fmt.Fprint(w, value)

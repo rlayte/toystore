@@ -1,37 +1,30 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 
 	"github.com/rlayte/toystore"
+	"github.com/rlayte/toystore/adapters/memory"
 )
-
-type MemoryStore struct {
-	data map[string]string
-}
-
-func (m MemoryStore) Get(key string) (string, bool) {
-	value, ok := m.data[key]
-	return value, ok
-}
-
-func (m MemoryStore) Put(key string, value string) {
-	m.data[key] = value
-}
 
 func main() {
 	var seed string
-	port, err := strconv.Atoi(os.Args[1])
-
-	if port != 3000 {
-		seed = ":3010"
+	if len(os.Args) != 2 {
+		fmt.Printf("usage: %s [port]", os.Args[0])
+		os.Exit(1)
 	}
+	port, err := strconv.Atoi(os.Args[1])
 
 	if err != nil {
 		panic(err)
 	}
 
-	t := toystore.New(port, &MemoryStore{map[string]string{}}, seed, toystore.ToystoreMetaData{RPCAddress: ":3020"})
+	if port != 3000 {
+		seed = ":3010"
+	}
+
+	t := toystore.New(port, memory.NewMemoryStore(), seed, toystore.ToystoreMetaData{RPCAddress: ":3020"})
 	t.Serve()
 }
