@@ -13,6 +13,12 @@ import (
 )
 
 type Toystore struct {
+	// Config
+	ReplicationLevel int
+	W                int
+	R                int
+
+	// Internal use
 	dive *dive.Node
 	port int
 	data Store
@@ -76,20 +82,36 @@ func (t *Toystore) Get(w http.ResponseWriter, r *http.Request, params httprouter
 	}
 }
 
-func (t *Toystore) Put(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (t *Toystore) CoordinatePut(key string, value string) {
+	t.updateMembers()
+	log.Printf("%s coordinating request %s/%s.", t.address(), key, value)
+
+	lookup := t.ring.KeyAddress([]byte(key))
+
+	for address, err := lookup(); err == nil; address, err = lookup() {
+		if string(address) != t.rpcAddress() {
+			log.Printf("%s sending replation request to %s.", t.address(), address)
+			PutCall(string(address), key, value)
+		} else {
+			log.Printf("Coordinator %s saving %s/%s.", t.address(), key, value)
+			t.data.Put(key, value)
+		}
+	}
+}
+
+func (t *Toystore) Put(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	t.updateMembers()
 
-	key := params.ByName("key")
+	key := p.ByName("key")
 	value := r.FormValue("data")
 	lookup := t.ring.KeyAddress([]byte(key))
 	address, _ := lookup()
 
 	if string(address) != t.rpcAddress() {
-		log.Printf("%s forwarding PUT request to %s. %s:%s", t.address(), address, key, value)
-		PutCall(string(address), key, value)
+		log.Printf("%s forwarding PUT request to coordinator %s.", t.address(), address)
+		CoordinatePut(string(address), key, value)
 	} else {
-		log.Printf("%s handling GET request. %s:%s", t.address(), key, value)
-		t.data.Put(key, value)
+		t.CoordinatePut(key, value)
 	}
 }
 
@@ -107,9 +129,14 @@ func (t *Toystore) Serve() {
 
 func New(port int, store Store, seed string, seedMeta interface{}) *Toystore {
 	t := &Toystore{
-		port: port,
-		data: store,
+		ReplicationLevel: 3,
+		W:                1,
+		R:                1,
+		port:             port,
+		data:             store,
 	}
+
+	circle.ReplicationDepth = 3
 
 	dive.PingInterval = time.Second
 	n := dive.NewNode(port+10, &dive.BasicRecord{Address: seed, MetaData: seedMeta})

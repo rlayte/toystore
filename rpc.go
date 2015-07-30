@@ -39,6 +39,11 @@ func (t *ToystoreRPC) Put(args *PutArgs, reply *PutReply) error {
 	return nil
 }
 
+func (t *ToystoreRPC) CoordinatePut(args *PutArgs, reply *PutReply) error {
+	t.store.CoordinatePut(args.Key, args.Value)
+	return nil
+}
+
 func ServeRPC(store *Toystore) {
 	rpcs := rpc.NewServer()
 	s := &ToystoreRPC{store}
@@ -115,4 +120,11 @@ func PutCall(address string, key string, value string) bool {
 	call(address, "ToystoreRPC.Put", args, reply)
 
 	return reply.Ok
+}
+
+func CoordinatePut(address string, key string, value string) {
+	args := &PutArgs{key, value}
+	reply := &PutReply{}
+
+	call(address, "ToystoreRPC.CoordinatePut", args, reply)
 }
