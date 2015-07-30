@@ -32,7 +32,7 @@ type ToystoreMetaData struct {
 
 type Store interface {
 	Get(string) (string, bool)
-	Put(string, string)
+	Put(string, string) bool
 }
 
 func (t *Toystore) updateMembers() {
@@ -65,6 +65,7 @@ func (t *Toystore) CoordinateGet(key string) (string, bool) {
 	var ok bool
 
 	lookup := t.ring.KeyAddress([]byte(key))
+	reads := 0
 
 	for address, err := lookup(); err == nil; address, err = lookup() {
 		if string(address) != t.rpcAddress() {
@@ -72,10 +73,14 @@ func (t *Toystore) CoordinateGet(key string) (string, bool) {
 		} else {
 			log.Printf("Coordinator %s retrieving %s.", t.address(), key)
 			value, ok = t.data.Get(key)
+
+			if ok {
+				reads++
+			}
 		}
 	}
 
-	return value, ok
+	return value, ok && reads >= t.R
 }
 
 func (t *Toystore) Get(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -121,8 +126,11 @@ func (t *Toystore) CoordinatePut(key string, value string) bool {
 			}
 		} else {
 			log.Printf("Coordinator %s saving %s/%s.", t.address(), key, value)
-			t.data.Put(key, value)
-			writes++
+			ok := t.data.Put(key, value)
+
+			if ok {
+				writes++
+			}
 		}
 	}
 
