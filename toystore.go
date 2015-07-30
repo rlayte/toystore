@@ -103,22 +103,30 @@ func (t *Toystore) Get(w http.ResponseWriter, r *http.Request, p httprouter.Para
 	}
 }
 
-func (t *Toystore) CoordinatePut(key string, value string) {
+func (t *Toystore) CoordinatePut(key string, value string) bool {
 	t.updateMembers()
 
 	log.Printf("%s coordinating PUT request %s/%s.", t.address(), key, value)
 
 	lookup := t.ring.KeyAddress([]byte(key))
+	writes := 0
 
 	for address, err := lookup(); err == nil; address, err = lookup() {
 		if string(address) != t.rpcAddress() {
 			log.Printf("%s sending replation request to %s.", t.address(), address)
-			PutCall(string(address), key, value)
+			ok := PutCall(string(address), key, value)
+
+			if ok {
+				writes++
+			}
 		} else {
 			log.Printf("Coordinator %s saving %s/%s.", t.address(), key, value)
 			t.data.Put(key, value)
+			writes++
 		}
 	}
+
+	return writes >= t.W
 }
 
 func (t *Toystore) Put(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
@@ -129,11 +137,19 @@ func (t *Toystore) Put(w http.ResponseWriter, r *http.Request, p httprouter.Para
 	lookup := t.ring.KeyAddress([]byte(key))
 	address, _ := lookup()
 
+	var ok bool
+
 	if string(address) != t.rpcAddress() {
 		log.Printf("%s forwarding PUT request to coordinator %s.", t.address(), address)
-		CoordinatePut(string(address), key, value)
+		ok = CoordinatePut(string(address), key, value)
 	} else {
-		t.CoordinatePut(key, value)
+		ok = t.CoordinatePut(key, value)
+	}
+
+	if ok {
+		fmt.Fprint(w, "Success")
+	} else {
+		fmt.Fprint(w, "Failed")
 	}
 }
 
@@ -158,7 +174,7 @@ func New(port int, store Store, seed string, seedMeta interface{}) *Toystore {
 		data:             store,
 	}
 
-	circle.ReplicationDepth = 3
+	circle.ReplicationDepth = t.ReplicationLevel
 
 	dive.PingInterval = time.Second
 	n := dive.NewNode(port+10, &dive.BasicRecord{Address: seed, MetaData: seedMeta})

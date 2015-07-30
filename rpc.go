@@ -45,7 +45,7 @@ func (t *ToystoreRPC) CoordinateGet(args *GetArgs, reply *GetReply) error {
 }
 
 func (t *ToystoreRPC) CoordinatePut(args *PutArgs, reply *PutReply) error {
-	t.store.CoordinatePut(args.Key, args.Value)
+	reply.Ok = t.store.CoordinatePut(args.Key, args.Value)
 	return nil
 }
 
@@ -136,9 +136,11 @@ func CoordinateGet(address string, key string) (string, bool) {
 	return reply.Value, reply.Ok
 }
 
-func CoordinatePut(address string, key string, value string) {
+func CoordinatePut(address string, key string, value string) bool {
 	args := &PutArgs{key, value}
 	reply := &PutReply{}
 
 	call(address, "ToystoreRPC.CoordinatePut", args, reply)
+
+	return reply.Ok
 }
