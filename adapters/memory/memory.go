@@ -9,8 +9,9 @@ func (m MemoryStore) Get(key string) (string, bool) {
 	return value, ok
 }
 
-func (m MemoryStore) Put(key string, value string) {
+func (m MemoryStore) Put(key string, value string) bool {
 	m.data[key] = value
+	return true
 }
 
 func New() *MemoryStore {
