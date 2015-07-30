@@ -18,11 +18,13 @@ func (r RedisStore) Get(key string) (string, bool) {
 	return value, true
 }
 
-func (r RedisStore) Put(key string, value string) {
+func (r RedisStore) Put(key string, value string) bool {
 	err := r.client.Cmd("SET", key, value).Err
 	if err != nil {
 		panic(err)
 	}
+
+	return err == nil
 }
 
 func New(url string) *RedisStore {

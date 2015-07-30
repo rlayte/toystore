@@ -6,7 +6,7 @@ import (
 	"strconv"
 
 	"github.com/rlayte/toystore"
-	"github.com/rlayte/toystore/adapters/redis"
+	"github.com/rlayte/toystore/adapters/memory"
 )
 
 func main() {
@@ -25,6 +25,6 @@ func main() {
 		seed = ":3010"
 	}
 
-	t := toystore.New(port, redis.New("localhost:6379"), seed, toystore.ToystoreMetaData{RPCAddress: ":3020"})
+	t := toystore.New(port, memory.New(), seed, toystore.ToystoreMetaData{RPCAddress: ":3020"})
 	t.Serve()
 }
