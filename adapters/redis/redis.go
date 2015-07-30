@@ -25,7 +25,7 @@ func (r RedisStore) Put(key string, value string) {
 	}
 }
 
-func NewRedisStore(url string) *RedisStore {
+func New(url string) *RedisStore {
 	client, err := radix.Dial("tcp", url)
 	if err != nil {
 		panic(err)

@@ -13,6 +13,6 @@ func (m MemoryStore) Put(key string, value string) {
 	m.data[key] = value
 }
 
-func NewMemoryStore() *MemoryStore {
+func New() *MemoryStore {
 	return &MemoryStore{map[string]string{}}
 }
