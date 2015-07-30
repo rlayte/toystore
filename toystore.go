@@ -56,27 +56,48 @@ func (t *Toystore) rpcAddress() string {
 	return fmt.Sprintf(":%d", t.port+20)
 }
 
-func (t *Toystore) Get(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+func (t *Toystore) CoordinateGet(key string) (string, bool) {
 	t.updateMembers()
 
-	key := params.ByName("key")
+	log.Printf("%s coordinating GET request %s.", t.address(), key)
+
+	var value string
+	var ok bool
+
+	lookup := t.ring.KeyAddress([]byte(key))
+
+	for address, err := lookup(); err == nil; address, err = lookup() {
+		if string(address) != t.rpcAddress() {
+			log.Printf("%s sending GET request to %s.", t.address(), address)
+		} else {
+			log.Printf("Coordinator %s retrieving %s.", t.address(), key)
+			value, ok = t.data.Get(key)
+		}
+	}
+
+	return value, ok
+}
+
+func (t *Toystore) Get(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
+	t.updateMembers()
+
+	key := p.ByName("key")
 	lookup := t.ring.KeyAddress([]byte(key))
 	address, _ := lookup()
+
 	var value string
 	var ok bool
 
 	if string(address) != t.rpcAddress() {
 		log.Printf("%s forwarding GET request to %s. %s", t.address(), address, key)
-		value, ok = GetCall(string(address), key)
+		value, ok = CoordinateGet(string(address), key)
 	} else {
-		log.Printf("%s handling GET request. %s", t.address(), key)
-		value, ok = t.data.Get(key)
+		value, ok = t.CoordinateGet(key)
 	}
 
 	if !ok {
 		w.Header().Set("Status", "404")
 		fmt.Fprint(w, "Not found\n")
-		return
 	} else {
 		fmt.Fprint(w, value)
 	}
@@ -84,7 +105,8 @@ func (t *Toystore) Get(w http.ResponseWriter, r *http.Request, params httprouter
 
 func (t *Toystore) CoordinatePut(key string, value string) {
 	t.updateMembers()
-	log.Printf("%s coordinating request %s/%s.", t.address(), key, value)
+
+	log.Printf("%s coordinating PUT request %s/%s.", t.address(), key, value)
 
 	lookup := t.ring.KeyAddress([]byte(key))
 
