@@ -2,3 +2,4 @@ log
 supervisord.log
 *.swp
 *.pid
+dump.rdb

@@ -10,6 +10,7 @@ import (
 	"github.com/charlesetc/circle"
 	"github.com/charlesetc/dive"
 	"github.com/julienschmidt/httprouter"
+	"github.com/rlayte/toystore/admin"
 )
 
 type Toystore struct {
@@ -166,11 +167,30 @@ func (t *Toystore) Put(w http.ResponseWriter, r *http.Request, p httprouter.Para
 	}
 }
 
+func (t *Toystore) EasyPut(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
+	t.updateMembers()
+
+	key := params.ByName("key")
+	value := params.ByName("value")
+	lookup := t.ring.KeyAddress([]byte(key))
+	address, _ := lookup()
+
+	if string(address) != t.rpcAddress() {
+		log.Printf("%s forwarding PUT request to %s. %s:%s", t.address(), address, key, value)
+		PutCall(string(address), key, value)
+	} else {
+		log.Printf("%s handling GET request. %s:%s", t.address(), key, value)
+		t.data.Put(key, value)
+	}
+}
+
 func (t *Toystore) Serve() {
 	router := httprouter.New()
 
-	router.GET("/:key", t.Get)
-	router.POST("/:key", t.Put)
+	admin.Route(router, t.ring)
+	router.GET("/api/:key", t.Get)
+	router.POST("/api/:key", t.Put)
+	router.GET("/api/:key/:value", t.EasyPut)
 
 	go ServeRPC(t)
 
