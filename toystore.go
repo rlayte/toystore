@@ -4,12 +4,10 @@ import (
 	"encoding/gob"
 	"fmt"
 	"log"
-	"net/http"
 	"time"
 
 	"github.com/charlesetc/circle"
 	"github.com/charlesetc/dive"
-	"github.com/julienschmidt/httprouter"
 )
 
 type Toystore struct {
@@ -20,9 +18,9 @@ type Toystore struct {
 
 	// Internal use
 	dive *dive.Node
-	port int
-	data Store
-	ring *circle.Circle
+	Port int
+	Data Store
+	Ring *circle.Circle
 }
 
 type ToystoreMetaData struct {
@@ -36,7 +34,7 @@ type Store interface {
 	Keys() []string
 }
 
-func (t *Toystore) updateMembers() {
+func (t *Toystore) UpdateMembers() {
 	addresses := []string{t.rpcAddress()}
 
 	for _, member := range t.dive.Members {
@@ -46,44 +44,44 @@ func (t *Toystore) updateMembers() {
 		}
 	}
 
-	t.ring = circle.CircleFromList(addresses)
+	t.Ring = circle.CircleFromList(addresses)
 }
 
-func (t *Toystore) address() string {
-	return fmt.Sprintf(":%d", t.port)
+func (t *Toystore) Address() string {
+	return fmt.Sprintf(":%d", t.Port)
 }
 
 func (t *Toystore) rpcAddress() string {
-	return fmt.Sprintf(":%d", t.port+20)
+	return fmt.Sprintf(":%d", t.Port+20)
 }
 
-func rpcToAddress(rpc string) string {
+func RpcToAddress(rpc string) string {
 	var port int
 	fmt.Sscanf(rpc, ":%d", &port)
 	return fmt.Sprintf(":%d", port-20)
 }
 
 func (t *Toystore) CoordinateGet(key string) (string, bool) {
-	t.updateMembers()
-	log.Printf("%s coordinating GET request %s.", t.address(), key)
+	t.UpdateMembers()
+	log.Printf("%s coordinating GET request %s.", t.Address(), key)
 
 	var value string
 	var ok bool
 
-	lookup := t.ring.KeyAddress([]byte(key))
+	lookup := t.Ring.KeyAddress([]byte(key))
 	reads := 0
 
 	for address, err := lookup(); err == nil; address, err = lookup() {
 		if string(address) != t.rpcAddress() {
-			log.Printf("%s sending GET request to %s.", t.address(), address)
+			log.Printf("%s sending GET request to %s.", t.Address(), address)
 			value, ok = GetCall(string(address), key)
 
 			if ok {
 				reads++
 			}
 		} else {
-			log.Printf("Coordinator %s retrieving %s.", t.address(), key)
-			value, ok = t.data.Get(key)
+			log.Printf("Coordinator %s retrieving %s.", t.Address(), key)
+			value, ok = t.Data.Get(key)
 
 			if ok {
 				reads++
@@ -94,50 +92,41 @@ func (t *Toystore) CoordinateGet(key string) (string, bool) {
 	return value, ok && reads >= t.R
 }
 
-func (t *Toystore) Get(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	t.updateMembers()
-
-	key := r.FormValue("key")
-	lookup := t.ring.KeyAddress([]byte(key))
+func (t *Toystore) Get(key string) (string, bool) {
+	lookup := t.Ring.KeyAddress([]byte(key))
 	address, _ := lookup()
 
 	var value string
 	var ok bool
 
 	if string(address) != t.rpcAddress() {
-		log.Printf("%s forwarding GET request to %s. %s", t.address(), address, key)
+		log.Printf("%s forwarding GET request to %s. %s", t.Address(), address, key)
 		value, ok = CoordinateGet(string(address), key)
 	} else {
 		value, ok = t.CoordinateGet(key)
 	}
-
-	if !ok {
-		w.Header().Set("Status", "404")
-		fmt.Fprint(w, "Not found\n")
-	} else {
-		fmt.Fprint(w, value)
-	}
+	return value, ok
 }
 
 func (t *Toystore) CoordinatePut(key string, value string) bool {
-	t.updateMembers()
+	t.UpdateMembers()
 
-	log.Printf("%s coordinating PUT request %s/%s.", t.address(), key, value)
+	log.Printf("%s coordinating PUT request %s/%s.", t.Address(), key, value)
 
-	lookup := t.ring.KeyAddress([]byte(key))
+	lookup := t.Ring.KeyAddress([]byte(key))
 	writes := 0
 
 	for address, err := lookup(); err == nil; address, err = lookup() {
 		if string(address) != t.rpcAddress() {
-			log.Printf("%s sending replation request to %s.", t.address(), address)
+			log.Printf("%s sending replation request to %s.", t.Address(), address)
 			ok := PutCall(string(address), key, value)
 
 			if ok {
 				writes++
 			}
 		} else {
-			log.Printf("Coordinator %s saving %s/%s.", t.address(), key, value)
-			ok := t.data.Put(key, value)
+			log.Printf("Coordinator %s saving %s/%s.", t.Address(), key, value)
+			ok := t.Data.Put(key, value)
 
 			if ok {
 				writes++
@@ -148,42 +137,19 @@ func (t *Toystore) CoordinatePut(key string, value string) bool {
 	return writes >= t.W
 }
 
-func (t *Toystore) Put(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
-	t.updateMembers()
-
-	key := r.FormValue("key")
-	value := r.FormValue("data")
-	lookup := t.ring.KeyAddress([]byte(key))
+func (t *Toystore) Put(key string, value string) bool {
+	lookup := t.Ring.KeyAddress([]byte(key))
 	address, _ := lookup()
 
 	var ok bool
 
 	if string(address) != t.rpcAddress() {
-		log.Printf("%s forwarding PUT request to coordinator %s.", t.address(), address)
+		log.Printf("%s forwarding PUT request to coordinator %s.", t.Address(), address)
 		ok = CoordinatePut(string(address), key, value)
 	} else {
 		ok = t.CoordinatePut(key, value)
 	}
-
-	if ok {
-		fmt.Fprint(w, "Success")
-	} else {
-		fmt.Fprint(w, "Failed")
-	}
-	http.Redirect(w, r, "/", 301)
-}
-
-func (t *Toystore) Serve() {
-	router := httprouter.New()
-
-	AdminRoute(router, t)
-	router.GET("/api", t.Get)
-	router.POST("/api", t.Put)
-
-	go ServeRPC(t)
-
-	log.Println("Running server on port", t.port)
-	log.Fatal(http.ListenAndServe(t.address(), router))
+	return ok
 }
 
 func New(port int, store Store, seed string, seedMeta interface{}) *Toystore {
@@ -191,15 +157,15 @@ func New(port int, store Store, seed string, seedMeta interface{}) *Toystore {
 		ReplicationLevel: 3,
 		W:                1,
 		R:                1,
-		port:             port,
-		data:             store,
+		Port:             port,
+		Data:             store,
 	}
 
 	circle.ReplicationDepth = t.ReplicationLevel
 
 	dive.PingInterval = time.Second
 	n := dive.NewNode(port+10, &dive.BasicRecord{Address: seed, MetaData: seedMeta})
-	n.MetaData = ToystoreMetaData{t.address(), t.rpcAddress()}
+	n.MetaData = ToystoreMetaData{t.Address(), t.rpcAddress()}
 	gob.RegisterName("ToystoreMetaData", n.MetaData)
 
 	t.dive = n
