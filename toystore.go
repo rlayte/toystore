@@ -61,8 +61,13 @@ func RpcToAddress(rpc string) string {
 	return fmt.Sprintf(":%d", port-20)
 }
 
+func (t *Toystore) isCoordinator(address []byte) bool {
+	return string(address) == t.rpcAddress()
+}
+
 func (t *Toystore) CoordinateGet(key string) (string, bool) {
 	t.UpdateMembers()
+
 	log.Printf("%s coordinating GET request %s.", t.Address(), key)
 
 	var value string
@@ -92,21 +97,19 @@ func (t *Toystore) CoordinateGet(key string) (string, bool) {
 	return value, ok && reads >= t.R
 }
 
-func (t *Toystore) Get(key string) (string, bool) {
+func (t *Toystore) Get(key string) (value string, ok bool) {
 	t.UpdateMembers()
+
 	lookup := t.Ring.KeyAddress([]byte(key))
 	address, _ := lookup()
 
-	var value string
-	var ok bool
-
-	if string(address) != t.rpcAddress() {
-		log.Printf("%s forwarding GET request to %s. %s", t.Address(), address, key)
-		value, ok = CoordinateGet(string(address), key)
-	} else {
+	if t.isCoordinator(address) {
 		value, ok = t.CoordinateGet(key)
+	} else {
+		value, ok = CoordinateGet(string(address), key)
 	}
-	return value, ok
+
+	return
 }
 
 func (t *Toystore) CoordinatePut(key string, value string) bool {
@@ -138,20 +141,19 @@ func (t *Toystore) CoordinatePut(key string, value string) bool {
 	return writes >= t.W
 }
 
-func (t *Toystore) Put(key string, value string) bool {
+func (t *Toystore) Put(key string, value string) (ok bool) {
 	t.UpdateMembers()
+
 	lookup := t.Ring.KeyAddress([]byte(key))
 	address, _ := lookup()
 
-	var ok bool
-
-	if string(address) != t.rpcAddress() {
-		log.Printf("%s forwarding PUT request to coordinator %s.", t.Address(), address)
-		ok = CoordinatePut(string(address), key, value)
-	} else {
+	if t.isCoordinator(address) {
 		ok = t.CoordinatePut(key, value)
+	} else {
+		ok = CoordinatePut(string(address), key, value)
 	}
-	return ok
+
+	return
 }
 
 func New(port int, store Store, seed string, seedMeta interface{}) *Toystore {
@@ -170,8 +172,9 @@ func New(port int, store Store, seed string, seedMeta interface{}) *Toystore {
 	n.MetaData = ToystoreMetaData{t.Address(), t.rpcAddress()}
 	gob.RegisterName("ToystoreMetaData", n.MetaData)
 
+	t.dive = n
+
 	go ServeRPC(t)
 
-	t.dive = n
 	return t
 }

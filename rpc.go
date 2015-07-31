@@ -1,6 +1,7 @@
 package toystore
 
 import (
+	"log"
 	"net"
 	"net/rpc"
 	"time"
@@ -128,6 +129,7 @@ func PutCall(address string, key string, value string) bool {
 }
 
 func CoordinateGet(address string, key string) (string, bool) {
+	log.Printf("Forwarding GET request to %s for %s", address, key)
 	args := &GetArgs{key}
 	reply := &GetReply{}
 
@@ -137,6 +139,8 @@ func CoordinateGet(address string, key string) (string, bool) {
 }
 
 func CoordinatePut(address string, key string, value string) bool {
+	log.Printf("Forwarding PUT request to coordinator %s for %s", address, key)
+
 	args := &PutArgs{key, value}
 	reply := &PutReply{}
 
