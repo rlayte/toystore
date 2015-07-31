@@ -57,6 +57,12 @@ func (t *Toystore) rpcAddress() string {
 	return fmt.Sprintf(":%d", t.port+20)
 }
 
+func rpcToAddress(rpc string) string {
+	var port int
+	fmt.Sscanf(rpc, ":%d", &port)
+	return fmt.Sprintf(":%d", port-20)
+}
+
 func (t *Toystore) CoordinateGet(key string) (string, bool) {
 	t.updateMembers()
 	log.Printf("%s coordinating GET request %s.", t.address(), key)

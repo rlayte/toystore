@@ -76,20 +76,20 @@ func GraphData(w http.ResponseWriter, r *http.Request, params httprouter.Params)
 		second_val := address_list[(i+1)%len(address_list)]
 		if val != "" && second_val != "" {
 			buf.WriteString("localhost") // Tempory hack for d3 parsing.
-			buf.WriteString(val)
+			buf.WriteString(rpcToAddress(val))
 			buf.WriteString(",")
 			buf.WriteString("localhost") // Tempory hack for d3 parsing.
-			buf.WriteString(second_val)
+			buf.WriteString(rpcToAddress(second_val))
 			buf.WriteString(",10\n") // Not sure what value does.
 		}
 	}
 
 	// Also a little hacky -- connects the ring
 	buf.WriteString("localhost") // Tempory hack for d3 parsing.
-	buf.WriteString(address_list[len(address_list)-1])
+	buf.WriteString(rpcToAddress(address_list[len(address_list)-1]))
 	buf.WriteString(",")
 	buf.WriteString("localhost") // Tempory hack for d3 parsing.
-	buf.WriteString(address_list[1])
+	buf.WriteString(rpcToAddress(address_list[1]))
 	buf.WriteString(",1\n") // Not sure what value does.
 
 	w.Write(buf.Bytes())
