@@ -1,0 +1,39 @@
+
+/* master.css */
+
+body {
+  overflow: hidden;
+}
+
+
+path.link {
+  fill: none;
+  stroke-width: 1.5px;
+  stroke: #777;
+}
+
+marker {
+  fill: #777;
+}
+
+circle {
+  fill: #9BC4E2;
+  stroke: #fff;
+  stroke-width: 1.5px;
+}
+
+svg {
+  border: 10px solid rgb(200, 255, 200);
+  display:block;
+  position:absolute;
+  top:0px;
+  right:0px;
+}
+
+text {
+  fill: #000;
+  font: 15px sans-serif;
+  pointer-events: none;
+  padding-left: 10px;
+}
+

@@ -10,7 +10,6 @@ import (
 	"github.com/charlesetc/circle"
 	"github.com/charlesetc/dive"
 	"github.com/julienschmidt/httprouter"
-	"github.com/rlayte/toystore/admin"
 )
 
 type Toystore struct {
@@ -34,6 +33,7 @@ type ToystoreMetaData struct {
 type Store interface {
 	Get(string) (string, bool)
 	Put(string, string) bool
+	Keys() []string
 }
 
 func (t *Toystore) updateMembers() {
@@ -187,7 +187,7 @@ func (t *Toystore) EasyPut(w http.ResponseWriter, r *http.Request, params httpro
 func (t *Toystore) Serve() {
 	router := httprouter.New()
 
-	admin.Route(router, t.ring)
+	AdminRoute(router, t)
 	router.GET("/api/:key", t.Get)
 	router.POST("/api/:key", t.Put)
 	router.GET("/api/:key/:value", t.EasyPut)
