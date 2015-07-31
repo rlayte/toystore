@@ -29,12 +29,12 @@ type PutReply struct {
 }
 
 func (t *ToystoreRPC) Get(args *GetArgs, reply *GetReply) error {
-	reply.Value, reply.Ok = t.store.data.Get(args.Key)
+	reply.Value, reply.Ok = t.store.Data.Get(args.Key)
 	return nil
 }
 
 func (t *ToystoreRPC) Put(args *PutArgs, reply *PutReply) error {
-	t.store.data.Put(args.Key, args.Value)
+	t.store.Data.Put(args.Key, args.Value)
 	reply.Ok = true
 	return nil
 }

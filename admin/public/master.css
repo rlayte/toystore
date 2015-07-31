@@ -1,0 +1,95 @@
+@import url(http://fonts.googleapis.com/css?family=Open+Sans:400);
+
+/* master.css */
+
+* {
+  font-family: "Open Sans", helvetica, arial;
+  font-weight:400;
+  font-size:20px;
+}
+
+body {
+  overflow: hidden;
+}
+
+h1 {
+  font-size:50px;
+  padding-top:30px;
+  text-align: center;
+} 
+
+section {
+  width: calc(100% - 400px);
+}
+
+form {
+  margin-left:30px;
+  border:solid #e0e0e0 1px;
+  width: 300px;
+}
+
+input {
+  width: 300px;
+  border:none;
+  box-sizing: border-box;
+  display: block;
+  padding:10px;
+  margin:none;
+}
+
+input[type='submit'] {
+  background-color: #e0e0e0;
+}
+
+input:focus {
+  border-left: 10px solid #e0e0e0;
+  outline: none;
+}
+input::-webkit-input-placeholder {
+   color: #e0e0e0;
+}
+
+input:-moz-placeholder { /* Firefox 18- */
+   color: #e0e0e0;  
+}
+
+input::-moz-placeholder {  /* Firefox 19+ */
+   color: #e0e0e0;  
+}
+
+input:-ms-input-placeholder {  
+   color: #e0e0e0;  
+}
+
+/* SVG styles */ 
+
+path.link {
+  fill: none;
+  stroke-width: 1.5px;
+  stroke: #777;
+}
+
+marker {
+  fill: #777;
+}
+
+circle {
+  fill: #9BC4E2;
+  stroke: #fff;
+  stroke-width: 1.5px;
+}
+
+svg {
+  border: 10px solid rgb(200, 255, 200);
+  display:block;
+  position:absolute;
+  top:0px;
+  right:0px;
+}
+
+text {
+  fill: #000;
+  font: 15px sans-serif;
+  pointer-events: none;
+  padding-left: 10px;
+}

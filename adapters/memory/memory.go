@@ -17,3 +17,13 @@ func (m MemoryStore) Put(key string, value string) bool {
 func New() *MemoryStore {
 	return &MemoryStore{map[string]string{}}
 }
+
+func (m MemoryStore) Keys() []string {
+	out := make([]string, len(m.data))
+	i := 0
+	for key := range m.data {
+		out[i] = key
+		i++
+	}
+	return out
+}

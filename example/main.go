@@ -7,6 +7,7 @@ import (
 
 	"github.com/rlayte/toystore"
 	"github.com/rlayte/toystore/adapters/memory"
+	"github.com/rlayte/toystore/admin"
 )
 
 func main() {
@@ -25,6 +26,5 @@ func main() {
 		seed = ":3010"
 	}
 
-	t := toystore.New(port, memory.New(), seed, toystore.ToystoreMetaData{RPCAddress: ":3020"})
-	t.Serve()
+	admin.Serve(toystore.New(port, memory.New(), seed, toystore.ToystoreMetaData{RPCAddress: ":3020"}))
 }

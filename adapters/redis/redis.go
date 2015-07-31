@@ -34,3 +34,20 @@ func New(url string) *RedisStore {
 	}
 	return &RedisStore{client}
 }
+
+func (r RedisStore) Keys() []string {
+	values := r.client.Cmd("KEYS")
+	elems := values.Elems
+
+	output := make([]string, len(elems))
+	i := 0
+	for _, e := range elems {
+		key, err := e.Str()
+		if err != nil {
+			panic(err)
+		}
+		output[i] = key
+		i++
+	}
+	return output
+}
