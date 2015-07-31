@@ -7,6 +7,26 @@
   <script type="text/javascript" charset="utf-8" src="/static/master.js"></script>
 </head>
 <body>
-  <h1>Toystore</h1>
+  <section>
+    <h1>Toystore</h1>
+
+    <form action="api" method="get" accept-charset="utf-8">
+      <input type="text" value="" name="key" placeholder="key"/>
+      <input type="submit" value="Get">
+    </form>
+    
+    <form action="api" method="POST" accept-charset="utf-8">
+      <input type="text" value="" name="key" placeholder="key"/>
+      <input type="text" value="" name="data" placeholder="value"/>
+      <input type="submit" value="Set">
+    </form>
+
+    <ul id="keys">
+      {{#each keys}}
+        <li>{{this}}</li>
+      {{/each}}
+    </ul>
+
+  </section>
 </body>
 </html>

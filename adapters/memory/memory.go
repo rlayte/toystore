@@ -21,7 +21,7 @@ func New() *MemoryStore {
 func (m MemoryStore) Keys() []string {
 	out := make([]string, len(m.data))
 	i := 0
-	for key := range data {
+	for key := range m.data {
 		out[i] = key
 		i++
 	}

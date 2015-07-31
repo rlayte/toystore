@@ -68,20 +68,25 @@ func GraphData(w http.ResponseWriter, r *http.Request, params httprouter.Params)
 	if Toy.ring == nil {
 		return
 	}
+
 	var buf bytes.Buffer
 	address_list := Toy.ring.AddressList()
-	buf.WriteString("source,target,value")
+	buf.WriteString("source,target,value\n")
 	for i, val := range address_list {
-		buf.WriteString("localhost") // Tempory hack for d3 parsing.
-		buf.WriteString(val)
-		buf.WriteString(",")
-		buf.WriteString("localhost") // Tempory hack for d3 parsing.
-		buf.WriteString(address_list[(i+1)%len(address_list)])
-		buf.WriteString(",1\n") // Not sure what value does.
+		second_val := address_list[(i+1)%len(address_list)]
+		if val != "" && second_val != "" {
+			buf.WriteString("localhost") // Tempory hack for d3 parsing.
+			buf.WriteString(val)
+			buf.WriteString(",")
+			buf.WriteString("localhost") // Tempory hack for d3 parsing.
+			buf.WriteString(second_val)
+			buf.WriteString(",10\n") // Not sure what value does.
+		}
 	}
 
 	// Also a little hacky -- connects the ring
 	buf.WriteString("localhost") // Tempory hack for d3 parsing.
+	buf.WriteString(address_list[len(address_list)-1])
 	buf.WriteString(",")
 	buf.WriteString("localhost") // Tempory hack for d3 parsing.
 	buf.WriteString(address_list[1])

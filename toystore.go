@@ -59,7 +59,6 @@ func (t *Toystore) rpcAddress() string {
 
 func (t *Toystore) CoordinateGet(key string) (string, bool) {
 	t.updateMembers()
-
 	log.Printf("%s coordinating GET request %s.", t.address(), key)
 
 	var value string
@@ -92,7 +91,7 @@ func (t *Toystore) CoordinateGet(key string) (string, bool) {
 func (t *Toystore) Get(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	t.updateMembers()
 
-	key := p.ByName("key")
+	key := r.FormValue("key")
 	lookup := t.ring.KeyAddress([]byte(key))
 	address, _ := lookup()
 
@@ -146,7 +145,7 @@ func (t *Toystore) CoordinatePut(key string, value string) bool {
 func (t *Toystore) Put(w http.ResponseWriter, r *http.Request, p httprouter.Params) {
 	t.updateMembers()
 
-	key := p.ByName("key")
+	key := r.FormValue("key")
 	value := r.FormValue("data")
 	lookup := t.ring.KeyAddress([]byte(key))
 	address, _ := lookup()
@@ -165,32 +164,15 @@ func (t *Toystore) Put(w http.ResponseWriter, r *http.Request, p httprouter.Para
 	} else {
 		fmt.Fprint(w, "Failed")
 	}
-}
-
-func (t *Toystore) EasyPut(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
-	t.updateMembers()
-
-	key := params.ByName("key")
-	value := params.ByName("value")
-	lookup := t.ring.KeyAddress([]byte(key))
-	address, _ := lookup()
-
-	if string(address) != t.rpcAddress() {
-		log.Printf("%s forwarding PUT request to %s. %s:%s", t.address(), address, key, value)
-		PutCall(string(address), key, value)
-	} else {
-		log.Printf("%s handling GET request. %s:%s", t.address(), key, value)
-		t.data.Put(key, value)
-	}
+	http.Redirect(w, r, "/", 301)
 }
 
 func (t *Toystore) Serve() {
 	router := httprouter.New()
 
 	AdminRoute(router, t)
-	router.GET("/api/:key", t.Get)
-	router.POST("/api/:key", t.Put)
-	router.GET("/api/:key/:value", t.EasyPut)
+	router.GET("/api", t.Get)
+	router.POST("/api", t.Put)
 
 	go ServeRPC(t)
 

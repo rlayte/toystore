@@ -35,7 +35,7 @@ svg.append("svg:defs").selectAll("marker")
     .attr("id", String)
     .attr("viewBox", "0 -5 10 10")
     .attr("refX", 15)
-    .attr("refY", -1.5)
+    .attr("refY", 0)
     .attr("markerWidth", 16)
     .attr("markerHeight", 16)
     .attr("orient", "auto")
@@ -74,7 +74,7 @@ function tick() {
     path.attr("d", function(d) {
         var dx = (d.target.x - d.source.x),
             dy = (d.target.y - d.source.y),
-            dr = 300 * Math.sqrt(dx * dx + dy * dy);
+            dr = 3 * Math.sqrt(dx * dx + dy * dy);
         return "M" + 
             d.source.x + "," + 
             d.source.y + "A" + 
