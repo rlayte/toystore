@@ -93,6 +93,7 @@ func (t *Toystore) CoordinateGet(key string) (string, bool) {
 }
 
 func (t *Toystore) Get(key string) (string, bool) {
+	t.UpdateMembers()
 	lookup := t.Ring.KeyAddress([]byte(key))
 	address, _ := lookup()
 
@@ -138,6 +139,7 @@ func (t *Toystore) CoordinatePut(key string, value string) bool {
 }
 
 func (t *Toystore) Put(key string, value string) bool {
+	t.UpdateMembers()
 	lookup := t.Ring.KeyAddress([]byte(key))
 	address, _ := lookup()
 
@@ -167,6 +169,8 @@ func New(port int, store Store, seed string, seedMeta interface{}) *Toystore {
 	n := dive.NewNode(port+10, &dive.BasicRecord{Address: seed, MetaData: seedMeta})
 	n.MetaData = ToystoreMetaData{t.Address(), t.rpcAddress()}
 	gob.RegisterName("ToystoreMetaData", n.MetaData)
+
+	go ServeRPC(t)
 
 	t.dive = n
 	return t
