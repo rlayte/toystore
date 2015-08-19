@@ -17,10 +17,12 @@ type Toystore struct {
 	R                int
 
 	// Internal use
-	dive *dive.Node
-	Port int
-	Data Store
-	Ring *circle.Circle
+	dive         *dive.Node
+	Port         int
+	Data         Store
+	Ring         *circle.Circle
+	request_ring chan bool
+	receive_ring chan bool
 }
 
 type ToystoreMetaData struct {
@@ -44,7 +46,9 @@ func (t *Toystore) UpdateMembers() {
 		}
 	}
 
+	// old_ring := t.Ring
 	t.Ring = circle.CircleFromList(addresses)
+	// Finish this up...
 }
 
 func (t *Toystore) Address() string {
@@ -66,7 +70,8 @@ func (t *Toystore) isCoordinator(address []byte) bool {
 }
 
 func (t *Toystore) CoordinateGet(key string) (string, bool) {
-	t.UpdateMembers()
+	// This is called in Put
+	// t.UpdateMembers()
 
 	log.Printf("%s coordinating GET request %s.", t.Address(), key)
 
@@ -97,23 +102,29 @@ func (t *Toystore) CoordinateGet(key string) (string, bool) {
 	return value, ok && reads >= t.R
 }
 
+// An exposed endpoint to the client.
+// Should function by directing each get or put
+// to the proper machine.
 func (t *Toystore) Get(key string) (value string, ok bool) {
 	t.UpdateMembers()
 
 	lookup := t.Ring.KeyAddress([]byte(key))
 	address, _ := lookup()
 
+	// if this is the right node...
 	if t.isCoordinator(address) {
+		// take care of the get myself
 		value, ok = t.CoordinateGet(key)
 	} else {
-		value, ok = CoordinateGet(string(address), key)
+		// send it off to the right one.
+		value, ok = CoordinateGetCall(string(address), key)
 	}
-
 	return
 }
 
 func (t *Toystore) CoordinatePut(key string, value string) bool {
-	t.UpdateMembers()
+	// This is called in Put
+	// t.UpdateMembers()
 
 	log.Printf("%s coordinating PUT request %s/%s.", t.Address(), key, value)
 
@@ -150,7 +161,7 @@ func (t *Toystore) Put(key string, value string) (ok bool) {
 	if t.isCoordinator(address) {
 		ok = t.CoordinatePut(key, value)
 	} else {
-		ok = CoordinatePut(string(address), key, value)
+		ok = CoordinatePutCall(string(address), key, value)
 	}
 
 	return
@@ -163,12 +174,14 @@ func New(port int, store Store, seed string, seedMeta interface{}) *Toystore {
 		R:                1,
 		Port:             port,
 		Data:             store,
+		request_ring:     make(chan bool),
+		receive_ring:     make(chan bool),
 	}
 
 	circle.ReplicationDepth = t.ReplicationLevel
 
 	dive.PingInterval = time.Second
-	n := dive.NewNode(port+10, &dive.BasicRecord{Address: seed, MetaData: seedMeta})
+	n := dive.NewNode(port+10, &dive.BasicRecord{Address: seed, MetaData: seedMeta}, nil)
 	n.MetaData = ToystoreMetaData{t.Address(), t.rpcAddress()}
 	gob.RegisterName("ToystoreMetaData", n.MetaData)
 

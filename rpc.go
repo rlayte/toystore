@@ -128,7 +128,7 @@ func PutCall(address string, key string, value string) bool {
 	return reply.Ok
 }
 
-func CoordinateGet(address string, key string) (string, bool) {
+func CoordinateGetCall(address string, key string) (string, bool) {
 	log.Printf("Forwarding GET request to %s for %s", address, key)
 	args := &GetArgs{key}
 	reply := &GetReply{}
@@ -138,7 +138,7 @@ func CoordinateGet(address string, key string) (string, bool) {
 	return reply.Value, reply.Ok
 }
 
-func CoordinatePut(address string, key string, value string) bool {
+func CoordinatePutCall(address string, key string, value string) bool {
 	log.Printf("Forwarding PUT request to coordinator %s for %s", address, key)
 
 	args := &PutArgs{key, value}
