@@ -17,12 +17,12 @@ type Toystore struct {
 	R                int
 
 	// Internal use
-	dive         *dive.Node
-	Port         int
-	Data         Store
-	Ring         *circle.Circle
-	request_ring chan bool
-	receive_ring chan bool
+	dive            *dive.Node
+	Port            int
+	Data            Store
+	Ring            *circle.Circle
+	request_address chan []byte
+	receive_address chan func() ([]byte, error) // will eventually not be bool anymore.
 }
 
 type ToystoreMetaData struct {
@@ -70,15 +70,13 @@ func (t *Toystore) isCoordinator(address []byte) bool {
 }
 
 func (t *Toystore) CoordinateGet(key string) (string, bool) {
-	// This is called in Put
-	// t.UpdateMembers()
 
 	log.Printf("%s coordinating GET request %s.", t.Address(), key)
 
 	var value string
 	var ok bool
 
-	lookup := t.Ring.KeyAddress([]byte(key))
+	lookup := t.KeyAddress([]byte(key))
 	reads := 0
 
 	for address, err := lookup(); err == nil; address, err = lookup() {
@@ -106,9 +104,9 @@ func (t *Toystore) CoordinateGet(key string) (string, bool) {
 // Should function by directing each get or put
 // to the proper machine.
 func (t *Toystore) Get(key string) (value string, ok bool) {
-	t.UpdateMembers()
+	// t.UpdateMembers()
 
-	lookup := t.Ring.KeyAddress([]byte(key))
+	lookup := t.KeyAddress([]byte(key))
 	address, _ := lookup()
 
 	// if this is the right node...
@@ -123,12 +121,10 @@ func (t *Toystore) Get(key string) (value string, ok bool) {
 }
 
 func (t *Toystore) CoordinatePut(key string, value string) bool {
-	// This is called in Put
-	// t.UpdateMembers()
 
 	log.Printf("%s coordinating PUT request %s/%s.", t.Address(), key, value)
 
-	lookup := t.Ring.KeyAddress([]byte(key))
+	lookup := t.KeyAddress([]byte(key))
 	writes := 0
 
 	for address, err := lookup(); err == nil; address, err = lookup() {
@@ -153,9 +149,9 @@ func (t *Toystore) CoordinatePut(key string, value string) bool {
 }
 
 func (t *Toystore) Put(key string, value string) (ok bool) {
-	t.UpdateMembers()
+	// t.UpdateMembers()
 
-	lookup := t.Ring.KeyAddress([]byte(key))
+	lookup := t.KeyAddress([]byte(key))
 	address, _ := lookup()
 
 	if t.isCoordinator(address) {
@@ -167,6 +163,34 @@ func (t *Toystore) Put(key string, value string) (ok bool) {
 	return
 }
 
+func (t *Toystore) KeyAddress(key []byte) func() ([]byte, error) {
+	t.request_address <- key
+	f := <-t.receive_address
+	return f
+}
+
+func (t *Toystore) serveAsync() {
+	for {
+		select {
+		case event := <-t.dive.Events:
+			switch event.Kind {
+			case dive.Join:
+				address := event.Data.(ToystoreMetaData).RPCAddress
+				log.Printf("Toystore joined: %s\n", address)
+				log.Printf("Members count: %d\n", len(t.dive.Members))
+				t.Ring.AddString(address)
+			case dive.Fail:
+				address := event.Data.(ToystoreMetaData).RPCAddress
+				log.Printf("Toystore left: %s\n", address)
+				t.Ring.RemoveString(address)
+			}
+		case key := <-t.request_address:
+			log.Println("request_address")
+			t.receive_address <- t.Ring.KeyAddress(key)
+		}
+	}
+}
+
 func New(port int, store Store, seed string, seedMeta interface{}) *Toystore {
 	t := &Toystore{
 		ReplicationLevel: 3,
@@ -174,18 +198,29 @@ func New(port int, store Store, seed string, seedMeta interface{}) *Toystore {
 		R:                1,
 		Port:             port,
 		Data:             store,
-		request_ring:     make(chan bool),
-		receive_ring:     make(chan bool),
+		request_address:  make(chan []byte),
+		receive_address:  make(chan func() ([]byte, error)),
+		Ring:             circle.NewCircleHead(),
 	}
 
 	circle.ReplicationDepth = t.ReplicationLevel
 
 	dive.PingInterval = time.Second
-	n := dive.NewNode(port+10, &dive.BasicRecord{Address: seed, MetaData: seedMeta}, nil)
+	n := dive.NewNode(
+		"localhost",
+		port+10,
+		&dive.BasicRecord{Address: seed, MetaData: seedMeta},
+		make(chan *dive.Event),
+	)
 	n.MetaData = ToystoreMetaData{t.Address(), t.rpcAddress()}
 	gob.RegisterName("ToystoreMetaData", n.MetaData)
 
 	t.dive = n
+
+	// Add yourself to the ring
+	t.Ring.AddString(t.rpcAddress())
+
+	go t.serveAsync()
 
 	go ServeRPC(t)
 
