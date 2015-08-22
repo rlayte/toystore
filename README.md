@@ -40,7 +40,7 @@ Or run a cluster with
 
     $ supervisord
 
-[rlayte/toystore-admin] serves as some example code for using the Toystore library.
+[rlayte/toystore-admin](http://github.com/rlayte/toystore-admin) serves as some example code for using the Toystore library.
 
 ## Testing
 
