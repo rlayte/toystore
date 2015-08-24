@@ -169,20 +169,51 @@ func (t *Toystore) KeyAddress(key []byte) func() ([]byte, error) {
 	return f
 }
 
+func (t *Toystore) Adjacent(address string) bool {
+	return t.Ring.Adjacent([]byte(t.rpcAddress()), []byte(address))
+}
+
+func (t *Toystore) Transfer(address string) {
+	keys := t.Data.Keys()
+	for _, key := range keys {
+		log.Printf("Test forward %s\n", key)
+		val, ok := t.Data.Get(key)
+		if !ok {
+			// Should not happen.
+			panic("I was told this key existed but it doesn't...")
+		}
+		// Checks to see if it's my key and if it's not, it forwards
+		// the put call.
+		ok = t.Put(key, val)
+	}
+}
+
+func (t *Toystore) handleJoin(address string) {
+	log.Printf("Toystore joined: %s\n", address)
+	t.Ring.AddString(address)
+
+	if t.Adjacent(address) {
+		log.Println("Adjacent.")
+		t.Transfer(address)
+	}
+}
+
+func (t *Toystore) handleFail(address string) {
+	log.Printf("Toystore left: %s\n", address)
+	t.Ring.RemoveString(address)
+}
+
 func (t *Toystore) serveAsync() {
 	for {
 		select {
 		case event := <-t.dive.Events:
 			switch event.Kind {
 			case dive.Join:
-				address := event.Data.(ToystoreMetaData).RPCAddress
-				log.Printf("Toystore joined: %s\n", address)
-				log.Printf("Members count: %d\n", len(t.dive.Members))
-				t.Ring.AddString(address)
+				address := event.Data.(ToystoreMetaData).RPCAddress // might not be rpc..
+				t.handleJoin(address)
 			case dive.Fail:
 				address := event.Data.(ToystoreMetaData).RPCAddress
-				log.Printf("Toystore left: %s\n", address)
-				t.Ring.RemoveString(address)
+				t.handleFail(address)
 			}
 		case key := <-t.request_address:
 			log.Println("request_address")
