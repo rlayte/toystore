@@ -14,7 +14,11 @@ SWIM is a gossip protocol that aims to reduce network traffic while still moving
 
 For Toystore, we implemented a SWIM-like protocol at [charlesetc/dive](http://github.com/Charlesetc/dive). Dive uses the first piggybacking strategy that SWIM suggests, but doesn't implement the probing strategy because Dynamo includes its own strategy for dealing with these errors. 
 
-## Dynamo
+## Differences
+
+-- Data Versioning
+-- Permanent Failures
+-- Virtual Nodes
 
 Dynamo works on top of the membership established by SWIM. Dynamo relies on an internal structure of a ring of members. The members are placed in the ring by a consistent hash of a unique identifier. Likewise, each incoming key is placed in the ring by the consistent hash and is therefore assigned to a node. 
 
