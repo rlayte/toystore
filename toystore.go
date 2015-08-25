@@ -149,8 +149,6 @@ func (t *Toystore) CoordinatePut(key string, value string) bool {
 }
 
 func (t *Toystore) Put(key string, value string) (ok bool) {
-	// t.UpdateMembers()
-
 	lookup := t.KeyAddress([]byte(key))
 	address, _ := lookup()
 
@@ -159,7 +157,6 @@ func (t *Toystore) Put(key string, value string) (ok bool) {
 	} else {
 		ok = CoordinatePutCall(string(address), key, value)
 	}
-
 	return
 }
 
@@ -176,15 +173,20 @@ func (t *Toystore) Adjacent(address string) bool {
 func (t *Toystore) Transfer(address string) {
 	keys := t.Data.Keys()
 	for _, key := range keys {
-		log.Printf("Test forward %s\n", key)
 		val, ok := t.Data.Get(key)
 		if !ok {
 			// Should not happen.
 			panic("I was told this key existed but it doesn't...")
 		}
+		log.Printf("Forward %s/%s\n", key, string(val))
 		// Checks to see if it's my key and if it's not, it forwards
 		// the put call.
-		ok = t.Put(key, val)
+		lookup := t.Ring.KeyAddress([]byte(key))
+		address, _ := lookup()
+
+		if !t.isCoordinator(address) {
+			CoordinatePutCall(string(address), key, val)
+		}
 	}
 }
 
@@ -200,7 +202,9 @@ func (t *Toystore) handleJoin(address string) {
 
 func (t *Toystore) handleFail(address string) {
 	log.Printf("Toystore left: %s\n", address)
-	t.Ring.RemoveString(address)
+	if address != t.rpcAddress() {
+		t.Ring.RemoveString(address) // this is causing a problem
+	}
 }
 
 func (t *Toystore) serveAsync() {
