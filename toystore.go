@@ -102,17 +102,12 @@ func (t *Toystore) CoordinateGet(key string) (string, bool) {
 // Should function by directing each get or put
 // to the proper machine.
 func (t *Toystore) Get(key string) (value string, ok bool) {
-	// t.UpdateMembers()
-
 	lookup := t.KeyAddress([]byte(key))
 	address, _ := lookup()
 
-	// if this is the right node...
 	if t.isCoordinator(address) {
-		// take care of the get myself
 		value, ok = t.CoordinateGet(key)
 	} else {
-		// send it off to the right one.
 		value, ok = CoordinateGetCall(string(address), key)
 	}
 	return
@@ -173,12 +168,9 @@ func (t *Toystore) Transfer(address string) {
 	for _, key := range keys {
 		val, ok := t.Data.Get(key)
 		if !ok {
-			// Should not happen.
 			panic("I was told this key existed but it doesn't...")
 		}
 		log.Printf("Forward %s/%s\n", key, string(val))
-		// Checks to see if it's my key and if it's not, it forwards
-		// the put call.
 		lookup := t.Ring.KeyAddress([]byte(key))
 		address, _ := lookup()
 
@@ -250,7 +242,6 @@ func New(port int, store Store, seed string, seedMeta interface{}) *Toystore {
 
 	t.dive = n
 
-	// Add yourself to the ring
 	t.Ring.AddString(t.rpcAddress())
 
 	go t.serveAsync()
