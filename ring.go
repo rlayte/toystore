@@ -15,15 +15,15 @@ var Hash func([]byte) []byte = func(bytes []byte) []byte {
 	return hash.Sum(nil)
 }
 
-type Circle struct {
+type Ring struct {
 	address []byte
 	hash    []byte
-	next    *Circle
+	next    *Ring
 }
 
-func (c *Circle) String() string {
+func (r *Ring) String() string {
 	var buffer bytes.Buffer
-	for current, first := c, true; len(current.hash) != 0 ||
+	for current, first := r, true; len(current.hash) != 0 ||
 		first; current, first = current.next, false {
 		if !first {
 			buffer.WriteString(" -> ")
@@ -35,9 +35,9 @@ func (c *Circle) String() string {
 	return buffer.String()
 }
 
-func (c *Circle) AddressList() []string {
+func (r *Ring) AddressList() []string {
 	output := make([]string, 0)
-	for current, first := c, true; len(current.hash) != 0 ||
+	for current, first := r, true; len(current.hash) != 0 ||
 		first; current, first = current.next, false {
 
 		output = append(output, string(current.address))
@@ -49,27 +49,27 @@ var (
 	ReplicationDepth int = 1
 )
 
-func NewCircleHead() *Circle {
-	circle := new(Circle)
-	circle.hash = []byte{} // empty is head.
-	circle.next = circle
-	return circle
+func NewRingHead() *Ring {
+	ring := new(Ring)
+	ring.hash = []byte{} // empty is head.
+	ring.next = ring
+	return ring
 }
 
-func NewCircle(address []byte) *Circle {
-	circle := new(Circle)
-	circle.address = address
-	circle.hash = Hash(address)
-	return circle
+func NewRing(address []byte) *Ring {
+	ring := new(Ring)
+	ring.address = address
+	ring.hash = Hash(address)
+	return ring
 }
 
-func NewCircleString(address string) *Circle {
-	return NewCircle([]byte(address))
+func NewRingString(address string) *Ring {
+	return NewRing([]byte(address))
 }
 
-func (c *Circle) Add(incoming *Circle) *Circle {
-	var current *Circle
-	for current = c; bytes.Compare(current.next.hash, incoming.hash) == -1; current = current.next {
+func (r *Ring) Add(incoming *Ring) *Ring {
+	var current *Ring
+	for current = r; bytes.Compare(current.next.hash, incoming.hash) == -1; current = current.next {
 		if bytes.Compare(current.next.hash, incoming.hash) == 0 {
 			return nil
 		}
@@ -82,18 +82,18 @@ func (c *Circle) Add(incoming *Circle) *Circle {
 	return incoming
 }
 
-func (c *Circle) AddString(address string) *Circle {
-	return c.Add(NewCircleString(address))
+func (r *Ring) AddString(address string) *Ring {
+	return r.Add(NewRingString(address))
 }
 
-func (c *Circle) RemoveString(address string) error {
-	return c.Remove([]byte(address))
+func (r *Ring) RemoveString(address string) error {
+	return r.Remove([]byte(address))
 }
 
-func (c *Circle) Remove(address []byte) error {
-	var current *Circle
-	var last *Circle
-	for current, last = c.next, c; bytes.Compare(current.address, address) != 0; current, last = current.next, current {
+func (r *Ring) Remove(address []byte) error {
+	var current *Ring
+	var last *Ring
+	for current, last = r.next, r; bytes.Compare(current.address, address) != 0; current, last = current.next, current {
 		if string(current.hash) == "" {
 			return errors.New(fmt.Sprintf("No such node in circle: %s\n", address))
 		}
@@ -102,18 +102,18 @@ func (c *Circle) Remove(address []byte) error {
 	return nil
 }
 
-func CircleFromList(strs []string) *Circle {
-	circle := NewCircleHead()
+func RingFromList(strs []string) *Ring {
+	ring := NewRingHead()
 	for _, str := range strs {
-		circle.AddString(str)
+		ring.AddString(str)
 	}
-	return circle
+	return ring
 }
 
-func (c *Circle) KeyAddress(key []byte) func() ([]byte, error) {
+func (r *Ring) KeyAddress(key []byte) func() ([]byte, error) {
 	hashed := Hash(key)
 
-	current := c.find(hashed)
+	current := r.find(hashed)
 
 	if bytes.Compare(current.hash, nil) == 0 {
 		current = current.next
@@ -137,15 +137,15 @@ func (c *Circle) KeyAddress(key []byte) func() ([]byte, error) {
 	}
 }
 
-func (c *Circle) find(address []byte) *Circle {
-	var current *Circle
+func (c *Ring) find(address []byte) *Ring {
+	var current *Ring
 	for current = c.next; bytes.Compare(current.hash, nil) != 0 &&
 		bytes.Compare(current.address, address) == -1; current = current.next {
 	}
 	return current
 }
 
-func (c *Circle) Adjacent(first []byte, second []byte) bool {
+func (c *Ring) Adjacent(first []byte, second []byte) bool {
 	next := c.find(first).next
 	if next.address == nil {
 		next = next.next
