@@ -6,7 +6,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/charlesetc/circle"
+	"github.com/Charlesetc/circle"
 	"github.com/charlesetc/dive"
 )
 
@@ -20,7 +20,7 @@ type Toystore struct {
 	dive            *dive.Node
 	Port            int
 	Data            Store
-	Ring            *circle.Circle
+	Ring            *Circle
 	request_address chan []byte
 	receive_address chan func() ([]byte, error) // will eventually not be bool anymore.
 }
@@ -46,9 +46,7 @@ func (t *Toystore) UpdateMembers() {
 		}
 	}
 
-	// old_ring := t.Ring
-	t.Ring = circle.CircleFromList(addresses)
-	// Finish this up...
+	t.Ring = CircleFromList(addresses)
 }
 
 func (t *Toystore) Address() string {
@@ -235,7 +233,7 @@ func New(port int, store Store, seed string, seedMeta interface{}) *Toystore {
 		Data:             store,
 		request_address:  make(chan []byte),
 		receive_address:  make(chan func() ([]byte, error)),
-		Ring:             circle.NewCircleHead(),
+		Ring:             NewCircleHead(),
 	}
 
 	circle.ReplicationDepth = t.ReplicationLevel
