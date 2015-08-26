@@ -3,6 +3,7 @@ package toystore
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -23,6 +24,8 @@ func TestBasicData(t *testing.T) {
 		value := fmt.Sprintf("basic-value-%d", i)
 		host := hosts[rand.Intn(len(hosts))]
 		data := url.Values{"key": {key}, "value": {value}}
+
+		log.Printf("Test: %s - %s/%s", host, key, value)
 
 		_, err := http.PostForm(host, data)
 
