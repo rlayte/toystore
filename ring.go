@@ -12,7 +12,6 @@ var Zero []byte = make([]byte, 256)
 var Hash func([]byte) []byte = func(bytes []byte) []byte {
 	hash := sha256.New()
 	hash.Write(bytes)
-	// fmt.Println(hash.Sum(nil))
 	return hash.Sum(nil)
 }
 
@@ -53,7 +52,6 @@ var (
 func NewCircleHead() *Circle {
 	circle := new(Circle)
 	circle.hash = []byte{} // empty is head.
-	// circle.address is undefined
 	circle.next = circle
 	return circle
 }
@@ -73,7 +71,7 @@ func (c *Circle) Add(incoming *Circle) *Circle {
 	var current *Circle
 	for current = c; bytes.Compare(current.next.hash, incoming.hash) == -1; current = current.next {
 		if bytes.Compare(current.next.hash, incoming.hash) == 0 {
-			return nil // Don't do anything if there's already the circle.
+			return nil
 		}
 		if bytes.Compare(current.next.hash, nil) == 0 {
 			break
@@ -100,8 +98,7 @@ func (c *Circle) Remove(address []byte) error {
 			return errors.New(fmt.Sprintf("No such node in circle: %s\n", address))
 		}
 	}
-	// log.Printf("Remove %s, %s -> %s", string(current.address), string(last.address), string(current.next.address))
-	last.next = current.next // I think this will be gc'd
+	last.next = current.next
 	return nil
 }
 
@@ -113,14 +110,12 @@ func CircleFromList(strs []string) *Circle {
 	return circle
 }
 
-// Will loop forever with an empty node...
 func (c *Circle) KeyAddress(key []byte) func() ([]byte, error) {
 	hashed := Hash(key)
 
 	current := c.find(hashed)
 
 	if bytes.Compare(current.hash, nil) == 0 {
-		// If we reached the end, just go one step further to loop around.
 		current = current.next
 	}
 
@@ -153,7 +148,7 @@ func (c *Circle) find(address []byte) *Circle {
 func (c *Circle) Adjacent(first []byte, second []byte) bool {
 	next := c.find(first).next
 	if next.address == nil {
-		next = next.next // ignore the head.
+		next = next.next
 	}
 	return bytes.Compare(next.address, second) == 0
 }
