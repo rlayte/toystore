@@ -215,27 +215,23 @@ func (t *Toystore) serveAsync() {
 	}
 }
 
-func New(port int, store Store, seed string, seedMeta interface{}) *Toystore {
+func New(config Config, seedMeta interface{}) *Toystore {
 	t := &Toystore{
-		ReplicationLevel: 3,
-		W:                1,
-		R:                1,
-		Port:             port,
-		Data:             store,
+		ReplicationLevel: config.ReplicationLevel,
+		W:                config.W,
+		R:                config.R,
+		Port:             config.ClientPort,
+		Data:             config.Store,
 		request_address:  make(chan []byte),
 		receive_address:  make(chan func() ([]byte, error)),
 		Ring:             NewRingHead(),
 	}
 
 	ReplicationDepth = t.ReplicationLevel
-
 	dive.PingInterval = time.Second
-	n := dive.NewNode(
-		"localhost",
-		port+10,
-		&dive.BasicRecord{Address: seed, MetaData: seedMeta},
-		make(chan *dive.Event),
-	)
+
+	seed := &dive.BasicRecord{Address: config.SeedAddress, MetaData: seedMeta}
+	n := dive.NewNode(config.Host, config.GossipPort, seed)
 	n.MetaData = ToystoreMetaData{t.Address(), t.rpcAddress()}
 	gob.RegisterName("ToystoreMetaData", n.MetaData)
 

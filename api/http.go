@@ -73,8 +73,20 @@ func main() {
 		seed = ":3010"
 	}
 
+	config := toystore.Config{
+		ReplicationLevel: 3,
+		W:                1,
+		R:                1,
+		ClientPort:       port,
+		RPCPort:          port + 20,
+		GossipPort:       port + 10,
+		Host:             "localhost",
+		SeedAddress:      seed,
+		Store:            memory.New(),
+	}
+
 	metaData := toystore.ToystoreMetaData{RPCAddress: ":3020"}
-	store := toystore.New(port, memory.New(), seed, metaData)
+	store := toystore.New(config, metaData)
 	api := Api{store}
 
 	api.Serve()
