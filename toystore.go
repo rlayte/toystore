@@ -16,12 +16,12 @@ type Toystore struct {
 	R                int
 
 	// Internal use
-	dive            *dive.Node
-	Port            int
-	Data            Store
-	Ring            *Ring
-	request_address chan []byte
-	receive_address chan func() ([]byte, error) // will eventually not be bool anymore.
+	dive           *dive.Node
+	Port           int
+	Data           Store
+	Ring           *Ring
+	requestAddress chan []byte
+	receiveAddress chan func() ([]byte, error)
 }
 
 type ToystoreMetaData struct {
@@ -33,19 +33,6 @@ type Store interface {
 	Get(string) (string, bool)
 	Put(string, string) bool
 	Keys() []string
-}
-
-func (t *Toystore) UpdateMembers() {
-	addresses := []string{t.rpcAddress()}
-
-	for _, member := range t.dive.Members {
-		if member.MetaData != nil {
-			metaData := member.MetaData.(ToystoreMetaData)
-			addresses = append(addresses, metaData.RPCAddress)
-		}
-	}
-
-	t.Ring = RingFromList(addresses)
 }
 
 func (t *Toystore) Address() string {
@@ -153,8 +140,8 @@ func (t *Toystore) Put(key string, value string) (ok bool) {
 }
 
 func (t *Toystore) KeyAddress(key []byte) func() ([]byte, error) {
-	t.request_address <- key
-	f := <-t.receive_address
+	t.requestAddress <- key
+	f := <-t.receiveAddress
 	return f
 }
 
@@ -208,9 +195,8 @@ func (t *Toystore) serveAsync() {
 				address := event.Data.(ToystoreMetaData).RPCAddress
 				t.handleFail(address)
 			}
-		case key := <-t.request_address:
-			log.Println("request_address")
-			t.receive_address <- t.Ring.KeyAddress(key)
+		case key := <-t.requestAddress:
+			t.receiveAddress <- t.Ring.KeyAddress(key)
 		}
 	}
 }
@@ -222,8 +208,8 @@ func New(config Config, seedMeta interface{}) *Toystore {
 		R:                config.R,
 		Port:             config.ClientPort,
 		Data:             config.Store,
-		request_address:  make(chan []byte),
-		receive_address:  make(chan func() ([]byte, error)),
+		requestAddress:   make(chan []byte),
+		receiveAddress:   make(chan func() ([]byte, error)),
 		Ring:             NewRingHead(),
 	}
 
