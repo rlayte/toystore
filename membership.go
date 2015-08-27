@@ -8,6 +8,7 @@ import (
 
 type Member interface {
 	Name() string
+	Address() string
 	Meta() []byte
 }
 
@@ -30,6 +31,10 @@ func (m *MemberlistNode) Name() string {
 	return m.node.Name
 }
 
+func (m *MemberlistNode) Address() string {
+	return string(m.node.Meta)
+}
+
 func (m *MemberlistNode) Meta() []byte {
 	return m.node.Meta
 }
@@ -43,6 +48,8 @@ func (m *Memberlist) Setup(t *Toystore) {
 
 	list, err := memberlist.Create(memberConfig)
 	m.list = list
+	n := m.list.LocalNode()
+	n.Meta = []byte(t.rpcAddress())
 
 	if err != nil {
 		panic("Failed to create memberlist: " + err.Error())
@@ -80,15 +87,19 @@ type MemberlistEvents struct {
 }
 
 func (m *MemberlistEvents) NotifyJoin(node *memberlist.Node) {
-	log.Printf("Toystore joined: %s\n", node)
+	log.Printf("Toystore joined: %s %s\n", node.Name, string(node.Meta), node.Meta)
+	member := &MemberlistNode{node}
+	m.toystore.AddMember(member)
 }
 
 func (m *MemberlistEvents) NotifyLeave(node *memberlist.Node) {
-	log.Printf("Toystore left: %s\n", node)
+	log.Printf("Toystore left: %s %s\n", node.Name, string(node.Meta))
+	member := &MemberlistNode{node}
+	m.toystore.RemoveMember(member)
 }
 
 func (m *MemberlistEvents) NotifyUpdate(node *memberlist.Node) {
-	log.Printf("Toystore update: %s\n", node)
+	log.Printf("Toystore update: %s %s\n", node.Name, string(node.Meta))
 }
 
 func NewMemberlist(t *Toystore, seed string) *Memberlist {
@@ -96,27 +107,6 @@ func NewMemberlist(t *Toystore, seed string) *Memberlist {
 	list.Setup(t)
 	list.Join(seed)
 	return list
-}
-
-func (t *Toystore) Adjacent(address string) bool {
-	return t.Ring.Adjacent([]byte(t.rpcAddress()), []byte(address))
-}
-
-func (t *Toystore) handleJoin(address string) {
-	log.Printf("Toystore joined: %s\n", address)
-	t.Ring.AddString(address)
-
-	if t.Adjacent(address) {
-		log.Println("Adjacent.")
-		t.Transfer(address)
-	}
-}
-
-func (t *Toystore) handleFail(address string) {
-	log.Printf("Toystore left: %s\n", address)
-	if address != t.rpcAddress() {
-		t.Ring.RemoveString(address) // this is causing a problem
-	}
 }
 
 func (t *Toystore) serveAsync() {
