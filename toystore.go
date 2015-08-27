@@ -1,12 +1,8 @@
 package toystore
 
 import (
-	"encoding/gob"
 	"fmt"
 	"log"
-	"time"
-
-	"github.com/charlesetc/dive"
 )
 
 type Toystore struct {
@@ -16,13 +12,13 @@ type Toystore struct {
 	R                int
 
 	// Internal use
-	dive           *dive.Node
 	Port           int
 	RPCPort        int
 	GossipPort     int
 	Host           string
 	Data           Store
 	Ring           *Ring
+	Members        Members
 	requestAddress chan []byte
 	receiveAddress chan func() ([]byte, error)
 }
@@ -62,6 +58,11 @@ func (t *Toystore) Get(key string) (value string, ok bool) {
 }
 
 func (t *Toystore) Put(key string, value string) (ok bool) {
+	log.Println("Putting", t.Members.Len())
+	for _, member := range t.Members.Members() {
+		log.Printf("%s has member %s", t.Address(), member.Name())
+	}
+
 	lookup := t.KeyAddress([]byte(key))
 	address, _ := lookup()
 
@@ -111,17 +112,9 @@ func New(config Config, seedMeta interface{}) *Toystore {
 		Ring:             NewRingHead(),
 	}
 
+	t.Members = NewMemberlist(t, config.SeedAddress)
+
 	ReplicationDepth = t.ReplicationLevel
-	dive.PingInterval = time.Second
-
-	seed := &dive.BasicRecord{Address: config.SeedAddress, MetaData: seedMeta}
-	events := make(chan *dive.Event)
-	n := dive.NewNode(config.Host, config.GossipPort, seed, events)
-	n.MetaData = ToystoreMetaData{t.Address(), t.rpcAddress()}
-	gob.RegisterName("ToystoreMetaData", n.MetaData)
-
-	t.dive = n
-
 	t.Ring.AddString(t.rpcAddress())
 	go t.serveAsync()
 	go ServeRPC(t)
