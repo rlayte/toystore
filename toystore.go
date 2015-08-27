@@ -29,12 +29,6 @@ type ToystoreMetaData struct {
 	RPCAddress string
 }
 
-type Store interface {
-	Get(string) (string, bool)
-	Put(string, string) bool
-	Keys() []string
-}
-
 func (t *Toystore) Address() string {
 	return fmt.Sprintf(":%d", t.Port)
 }
@@ -47,41 +41,6 @@ func RpcToAddress(rpc string) string {
 	var port int
 	fmt.Sscanf(rpc, ":%d", &port)
 	return fmt.Sprintf(":%d", port-20)
-}
-
-func (t *Toystore) isCoordinator(address []byte) bool {
-	return string(address) == t.rpcAddress()
-}
-
-func (t *Toystore) CoordinateGet(key string) (string, bool) {
-
-	log.Printf("%s coordinating GET request %s.", t.Address(), key)
-
-	var value string
-	var ok bool
-
-	lookup := t.KeyAddress([]byte(key))
-	reads := 0
-
-	for address, err := lookup(); err == nil; address, err = lookup() {
-		if string(address) != t.rpcAddress() {
-			log.Printf("%s sending GET request to %s.", t.Address(), address)
-			value, ok = GetCall(string(address), key)
-
-			if ok {
-				reads++
-			}
-		} else {
-			log.Printf("Coordinator %s retrieving %s.", t.Address(), key)
-			value, ok = t.Data.Get(key)
-
-			if ok {
-				reads++
-			}
-		}
-	}
-
-	return value, ok && reads >= t.R
 }
 
 // An exposed endpoint to the client.
@@ -97,34 +56,6 @@ func (t *Toystore) Get(key string) (value string, ok bool) {
 		value, ok = CoordinateGetCall(string(address), key)
 	}
 	return
-}
-
-func (t *Toystore) CoordinatePut(key string, value string) bool {
-
-	log.Printf("%s coordinating PUT request %s/%s.", t.Address(), key, value)
-
-	lookup := t.KeyAddress([]byte(key))
-	writes := 0
-
-	for address, err := lookup(); err == nil; address, err = lookup() {
-		if string(address) != t.rpcAddress() {
-			log.Printf("%s sending replation request to %s.", t.Address(), address)
-			ok := PutCall(string(address), key, value)
-
-			if ok {
-				writes++
-			}
-		} else {
-			log.Printf("Coordinator %s saving %s/%s.", t.Address(), key, value)
-			ok := t.Data.Put(key, value)
-
-			if ok {
-				writes++
-			}
-		}
-	}
-
-	return writes >= t.W
 }
 
 func (t *Toystore) Put(key string, value string) (ok bool) {
@@ -145,10 +76,6 @@ func (t *Toystore) KeyAddress(key []byte) func() ([]byte, error) {
 	return f
 }
 
-func (t *Toystore) Adjacent(address string) bool {
-	return t.Ring.Adjacent([]byte(t.rpcAddress()), []byte(address))
-}
-
 func (t *Toystore) Transfer(address string) {
 	keys := t.Data.Keys()
 	for _, key := range keys {
@@ -162,41 +89,6 @@ func (t *Toystore) Transfer(address string) {
 
 		if !t.isCoordinator(address) {
 			CoordinatePutCall(string(address), key, val)
-		}
-	}
-}
-
-func (t *Toystore) handleJoin(address string) {
-	log.Printf("Toystore joined: %s\n", address)
-	t.Ring.AddString(address)
-
-	if t.Adjacent(address) {
-		log.Println("Adjacent.")
-		t.Transfer(address)
-	}
-}
-
-func (t *Toystore) handleFail(address string) {
-	log.Printf("Toystore left: %s\n", address)
-	if address != t.rpcAddress() {
-		t.Ring.RemoveString(address) // this is causing a problem
-	}
-}
-
-func (t *Toystore) serveAsync() {
-	for {
-		select {
-		case event := <-t.dive.Events:
-			switch event.Kind {
-			case dive.Join:
-				address := event.Data.(ToystoreMetaData).RPCAddress // might not be rpc..
-				t.handleJoin(address)
-			case dive.Fail:
-				address := event.Data.(ToystoreMetaData).RPCAddress
-				t.handleFail(address)
-			}
-		case key := <-t.requestAddress:
-			t.receiveAddress <- t.Ring.KeyAddress(key)
 		}
 	}
 }
