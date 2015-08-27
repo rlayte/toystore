@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strconv"
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/rlayte/toystore"
@@ -53,39 +52,36 @@ func (a *Api) Serve() {
 	router.GET("/:key", a.Get)
 	router.POST("/", a.Put)
 
-	log.Println("Running server on port", a.store.Port)
+	log.Println("Running server on", a.store.Address())
 	log.Fatal(http.ListenAndServe(a.store.Address(), router))
 }
 
 func main() {
-	var seed string
 	if len(os.Args) != 2 {
-		fmt.Printf("usage: %s [port]", os.Args[0])
+		fmt.Printf("usage: %s [host]", os.Args[0])
 		os.Exit(1)
 	}
-	port, err := strconv.Atoi(os.Args[1])
 
-	if err != nil {
-		panic(err)
-	}
-
-	if port != 3000 {
-		seed = ":3010"
-	}
+	seed := "127.0.0.2"
+	host := os.Args[1]
 
 	config := toystore.Config{
 		ReplicationLevel: 3,
 		W:                1,
 		R:                1,
-		ClientPort:       port,
-		RPCPort:          port + 20,
-		GossipPort:       port + 10,
-		Host:             "localhost",
-		SeedAddress:      seed,
+		ClientPort:       3000,
+		RPCPort:          3001,
+		GossipPort:       3002,
+		Host:             host,
 		Store:            memory.New(),
 	}
 
-	metaData := toystore.ToystoreMetaData{RPCAddress: ":3020"}
+	if host != seed {
+		config.SeedAddress = fmt.Sprintf("%s:%d", seed, config.GossipPort)
+	}
+
+	seedRPCAddress := fmt.Sprintf("%s:%d", seed, config.RPCPort)
+	metaData := toystore.ToystoreMetaData{RPCAddress: seedRPCAddress}
 	store := toystore.New(config, metaData)
 	api := Api{store}
 

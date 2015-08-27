@@ -18,6 +18,9 @@ type Toystore struct {
 	// Internal use
 	dive           *dive.Node
 	Port           int
+	RPCPort        int
+	GossipPort     int
+	Host           string
 	Data           Store
 	Ring           *Ring
 	requestAddress chan []byte
@@ -30,11 +33,11 @@ type ToystoreMetaData struct {
 }
 
 func (t *Toystore) Address() string {
-	return fmt.Sprintf(":%d", t.Port)
+	return fmt.Sprintf("%s:%d", t.Host, t.Port)
 }
 
 func (t *Toystore) rpcAddress() string {
-	return fmt.Sprintf(":%d", t.Port+20)
+	return fmt.Sprintf("%s:%d", t.Host, t.RPCPort)
 }
 
 func RpcToAddress(rpc string) string {
@@ -98,7 +101,10 @@ func New(config Config, seedMeta interface{}) *Toystore {
 		ReplicationLevel: config.ReplicationLevel,
 		W:                config.W,
 		R:                config.R,
+		Host:             config.Host,
 		Port:             config.ClientPort,
+		RPCPort:          config.RPCPort,
+		GossipPort:       config.GossipPort,
 		Data:             config.Store,
 		requestAddress:   make(chan []byte),
 		receiveAddress:   make(chan func() ([]byte, error)),
@@ -116,9 +122,7 @@ func New(config Config, seedMeta interface{}) *Toystore {
 	t.dive = n
 
 	t.Ring.AddString(t.rpcAddress())
-
 	go t.serveAsync()
-
 	go ServeRPC(t)
 
 	return t

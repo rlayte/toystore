@@ -7,15 +7,16 @@ import (
 	"net/http"
 	"net/url"
 	"testing"
+	"time"
 )
 
 func host() string {
 	hosts := []string{
-		"http://localhost:3000",
-		"http://localhost:3001",
-		"http://localhost:3002",
-		"http://localhost:3003",
-		"http://localhost:3004",
+		"http://127.0.0.2:3000",
+		"http://127.0.0.3:3000",
+		"http://127.0.0.4:3000",
+		"http://127.0.0.5:3000",
+		"http://127.0.0.6:3000",
 	}
 
 	return hosts[rand.Intn(len(hosts))]
@@ -32,8 +33,15 @@ func TestBasicData(t *testing.T) {
 		if err != nil {
 			t.Error(err)
 		}
+	}
 
-		resp, err := http.Get(host() + "/" + key)
+	time.Sleep(time.Second)
+
+	for i := 0; i < 100; i++ {
+		h := host()
+		key := fmt.Sprintf("basic-%d", i)
+		value := fmt.Sprintf("basic-value-%d", i)
+		resp, err := http.Get(h + "/" + key)
 		defer resp.Body.Close()
 
 		if err != nil {
@@ -43,7 +51,7 @@ func TestBasicData(t *testing.T) {
 		body, err := ioutil.ReadAll(resp.Body)
 
 		if string(body) != value {
-			t.Errorf("%s should equal %s", string(body), value)
+			t.Errorf("%s: %s != %s", h, string(body), value)
 		}
 	}
 }
