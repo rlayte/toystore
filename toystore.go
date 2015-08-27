@@ -115,7 +115,8 @@ func New(config Config, seedMeta interface{}) *Toystore {
 	dive.PingInterval = time.Second
 
 	seed := &dive.BasicRecord{Address: config.SeedAddress, MetaData: seedMeta}
-	n := dive.NewNode(config.Host, config.GossipPort, seed)
+	events := make(chan *dive.Event)
+	n := dive.NewNode(config.Host, config.GossipPort, seed, events)
 	n.MetaData = ToystoreMetaData{t.Address(), t.rpcAddress()}
 	gob.RegisterName("ToystoreMetaData", n.MetaData)
 
