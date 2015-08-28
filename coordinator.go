@@ -44,7 +44,7 @@ func (t *Toystore) CoordinatePut(key string, value string) bool {
 
 	for address, err := lookup(); err == nil; address, err = lookup() {
 		if string(address) != t.rpcAddress() {
-			log.Printf("%s sending replation request to %s.", t.Address(), address)
+			log.Printf("%s sending replication request to %s.", t.Address(), address)
 			ok := PutCall(string(address), key, value)
 
 			if ok {

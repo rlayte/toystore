@@ -49,11 +49,6 @@ func (t *Toystore) Get(key string) (value string, ok bool) {
 }
 
 func (t *Toystore) Put(key string, value string) (ok bool) {
-	log.Println("Putting", t.Members.Len())
-	for _, member := range t.Members.Members() {
-		log.Printf("%s has member %s", t.Address(), member.Name())
-	}
-
 	lookup := t.Ring.KeyAddress([]byte(key))
 	address, _ := lookup()
 
@@ -83,7 +78,8 @@ func (t *Toystore) Transfer(address string) {
 }
 
 func (t *Toystore) AddMember(member Member) {
-	t.Ring.AddString(member.Name())
+	log.Printf("%s adding member %s", t.Host, member.Name())
+	t.Ring.AddString(member.Address())
 	localAddress := t.rpcAddress()
 	adjacent := t.Ring.Adjacent([]byte(localAddress), member.Meta())
 
@@ -95,7 +91,8 @@ func (t *Toystore) AddMember(member Member) {
 
 func (t *Toystore) RemoveMember(member Member) {
 	if member.Address() != t.rpcAddress() {
-		t.Ring.RemoveString(member.Name()) // this is causing a problem
+		log.Printf("%s removing member %s", t.Host, member.Name())
+		t.Ring.RemoveString(member.Address()) // this is causing a problem
 	}
 }
 

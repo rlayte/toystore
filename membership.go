@@ -90,13 +90,13 @@ type MemberlistEvents struct {
 }
 
 func (m *MemberlistEvents) NotifyJoin(node *memberlist.Node) {
-	log.Printf("Toystore joined: %s %s\n", node.Name, string(node.Meta), node.Meta)
-	member := &MemberlistNode{node}
-	m.toystore.AddMember(member)
+	if node.Meta != nil {
+		member := &MemberlistNode{node}
+		m.toystore.AddMember(member)
+	}
 }
 
 func (m *MemberlistEvents) NotifyLeave(node *memberlist.Node) {
-	log.Printf("Toystore left: %s %s\n", node.Name, string(node.Meta))
 	member := &MemberlistNode{node}
 	m.toystore.RemoveMember(member)
 }
