@@ -1,12 +1,8 @@
 package toystore
 
 import (
-	"encoding/gob"
 	"fmt"
 	"log"
-	"time"
-
-	"github.com/charlesetc/dive"
 )
 
 type Toystore struct {
@@ -16,13 +12,12 @@ type Toystore struct {
 	R                int
 
 	// Internal use
-	dive           *dive.Node
 	Port           int
 	RPCPort        int
-	GossipPort     int
 	Host           string
 	Data           Store
 	Ring           *Ring
+	Members        Members
 	requestAddress chan []byte
 	receiveAddress chan func() ([]byte, error)
 }
@@ -38,12 +33,6 @@ func (t *Toystore) Address() string {
 
 func (t *Toystore) rpcAddress() string {
 	return fmt.Sprintf("%s:%d", t.Host, t.RPCPort)
-}
-
-func RpcToAddress(rpc string) string {
-	var port int
-	fmt.Sscanf(rpc, ":%d", &port)
-	return fmt.Sprintf(":%d", port-20)
 }
 
 // An exposed endpoint to the client.
@@ -62,6 +51,11 @@ func (t *Toystore) Get(key string) (value string, ok bool) {
 }
 
 func (t *Toystore) Put(key string, value string) (ok bool) {
+	log.Println("Putting", t.Members.Len())
+	for _, member := range t.Members.Members() {
+		log.Printf("%s has member %s", t.Address(), member.Name())
+	}
+
 	lookup := t.KeyAddress([]byte(key))
 	address, _ := lookup()
 
@@ -96,6 +90,23 @@ func (t *Toystore) Transfer(address string) {
 	}
 }
 
+func (t *Toystore) AddMember(member Member) {
+	t.Ring.AddString(member.Name())
+	localAddress := t.rpcAddress()
+	adjacent := t.Ring.Adjacent([]byte(localAddress), member.Meta())
+
+	if adjacent {
+		log.Println("Adjacent.")
+		t.Transfer(member.Address())
+	}
+}
+
+func (t *Toystore) RemoveMember(member Member) {
+	if member.Address() != t.rpcAddress() {
+		t.Ring.RemoveString(member.Name()) // this is causing a problem
+	}
+}
+
 func New(config Config, seedMeta interface{}) *Toystore {
 	t := &Toystore{
 		ReplicationLevel: config.ReplicationLevel,
@@ -104,24 +115,15 @@ func New(config Config, seedMeta interface{}) *Toystore {
 		Host:             config.Host,
 		Port:             config.ClientPort,
 		RPCPort:          config.RPCPort,
-		GossipPort:       config.GossipPort,
 		Data:             config.Store,
 		requestAddress:   make(chan []byte),
 		receiveAddress:   make(chan func() ([]byte, error)),
 		Ring:             NewRingHead(),
 	}
 
+	t.Members = NewMemberlist(t, config.SeedAddress)
+
 	ReplicationDepth = t.ReplicationLevel
-	dive.PingInterval = time.Second
-
-	seed := &dive.BasicRecord{Address: config.SeedAddress, MetaData: seedMeta}
-	events := make(chan *dive.Event)
-	n := dive.NewNode(config.Host, config.GossipPort, seed, events)
-	n.MetaData = ToystoreMetaData{t.Address(), t.rpcAddress()}
-	gob.RegisterName("ToystoreMetaData", n.MetaData)
-
-	t.dive = n
-
 	t.Ring.AddString(t.rpcAddress())
 	go t.serveAsync()
 	go ServeRPC(t)

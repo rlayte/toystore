@@ -71,13 +71,12 @@ func main() {
 		R:                1,
 		ClientPort:       3000,
 		RPCPort:          3001,
-		GossipPort:       3002,
 		Host:             host,
 		Store:            memory.New(),
 	}
 
 	if host != seed {
-		config.SeedAddress = fmt.Sprintf("%s:%d", seed, config.GossipPort)
+		config.SeedAddress = seed
 	}
 
 	seedRPCAddress := fmt.Sprintf("%s:%d", seed, config.RPCPort)
