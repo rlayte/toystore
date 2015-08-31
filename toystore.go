@@ -18,6 +18,8 @@ type Toystore struct {
 	Data    Store
 	Ring    *Ring
 	Members Members
+
+	client PeerClient
 }
 
 type ToystoreMetaData struct {
@@ -40,11 +42,15 @@ func (t *Toystore) Get(key string) (value string, ok bool) {
 	lookup := t.Ring.KeyAddress([]byte(key))
 	address, _ := lookup()
 
+	log.Println("Get request", key, string(address))
+
 	if t.isCoordinator(address) {
 		value, ok = t.CoordinateGet(key)
 	} else {
-		value, ok = CoordinateGetCall(string(address), key)
+		value, ok = t.client.CoordinateGet(string(address), key)
 	}
+
+	log.Println("Get request", key, ok, t.isCoordinator(address), string(address), t.Host)
 	return
 }
 
@@ -52,10 +58,12 @@ func (t *Toystore) Put(key string, value string) (ok bool) {
 	lookup := t.Ring.KeyAddress([]byte(key))
 	address, _ := lookup()
 
+	log.Println(t.Host, "Current members", t.Ring.AddressList(), string(address))
+
 	if t.isCoordinator(address) {
 		ok = t.CoordinatePut(key, value)
 	} else {
-		ok = CoordinatePutCall(string(address), key, value)
+		ok = t.client.CoordinatePut(string(address), key, value)
 	}
 	return
 }
@@ -72,7 +80,7 @@ func (t *Toystore) Transfer(address string) {
 		address, _ := lookup()
 
 		if !t.isCoordinator(address) {
-			CoordinatePutCall(string(address), key, val)
+			t.client.CoordinatePut(string(address), key, val)
 		}
 	}
 }
@@ -84,7 +92,6 @@ func (t *Toystore) AddMember(member Member) {
 	adjacent := t.Ring.Adjacent([]byte(localAddress), member.Meta())
 
 	if adjacent {
-		log.Println("Adjacent.")
 		t.Transfer(member.Address())
 	}
 }
@@ -104,15 +111,17 @@ func New(config Config, seedMeta interface{}) *Toystore {
 		Host:             config.Host,
 		Port:             config.ClientPort,
 		RPCPort:          config.RPCPort,
-		Data:             config.Store,
 		Ring:             NewRingHead(),
+		Data:             config.Store,
+
+		client: NewRpcClient(),
 	}
 
 	t.Members = NewMemberlist(t, config.SeedAddress)
 
 	ReplicationDepth = t.ReplicationLevel
 	t.Ring.AddString(t.rpcAddress())
-	go ServeRPC(t)
+	NewRpcHandler(t)
 
 	return t
 }
