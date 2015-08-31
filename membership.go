@@ -47,6 +47,9 @@ func (m *Memberlist) Setup(t *Toystore) {
 	memberConfig.Events = &MemberlistEvents{t}
 
 	list, err := memberlist.Create(memberConfig)
+	if err != nil {
+		panic(err)
+	}
 	m.list = list
 	n := m.list.LocalNode()
 	n.Meta = []byte(t.rpcAddress())
