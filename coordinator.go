@@ -12,7 +12,7 @@ func (t *Toystore) CoordinateGet(key string) (string, bool) {
 	var value string
 	var ok bool
 
-	lookup := t.KeyAddress([]byte(key))
+	lookup := t.Ring.KeyAddress([]byte(key))
 	reads := 0
 
 	for address, err := lookup(); err == nil; address, err = lookup() {
@@ -39,7 +39,7 @@ func (t *Toystore) CoordinateGet(key string) (string, bool) {
 func (t *Toystore) CoordinatePut(key string, value string) bool {
 	log.Printf("%s coordinating PUT request %s/%s.", t.Address(), key, value)
 
-	lookup := t.KeyAddress([]byte(key))
+	lookup := t.Ring.KeyAddress([]byte(key))
 	writes := 0
 
 	for address, err := lookup(); err == nil; address, err = lookup() {

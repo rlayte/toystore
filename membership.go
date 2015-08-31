@@ -111,10 +111,3 @@ func NewMemberlist(t *Toystore, seed string) *Memberlist {
 	list.Join(seed)
 	return list
 }
-
-func (t *Toystore) serveAsync() {
-	for {
-		key := <-t.requestAddress
-		t.receiveAddress <- t.Ring.KeyAddress(key)
-	}
-}
