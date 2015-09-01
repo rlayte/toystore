@@ -1,11 +1,15 @@
 package toystore
 
-import "time"
+import (
+	"time"
+
+	"github.com/rlayte/toystore/data"
+)
 
 type HintedHandoff struct {
 	ScanInterval time.Duration
 
-	data   map[string]*Data
+	data   map[string]*data.Data
 	client PeerClient
 }
 
@@ -16,13 +20,13 @@ func (h *HintedHandoff) scan() {
 }
 
 func (h *HintedHandoff) Put(key string, value interface{}, hint string) {
-	h.data[hint] = NewData(key, value)
+	h.data[hint] = data.New(key, value)
 }
 
 func NewHintedHandoff(config *Config, client PeerClient) *HintedHandoff {
 	h := &HintedHandoff{
 		ScanInterval: config.HandoffInterval,
-		data:         map[string]*Data{},
+		data:         map[string]*data.Data{},
 		client:       client,
 	}
 

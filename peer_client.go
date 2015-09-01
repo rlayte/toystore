@@ -4,14 +4,16 @@ import (
 	"log"
 	"net/rpc"
 	"time"
+
+	"github.com/rlayte/toystore/data"
 )
 
 type PeerClient interface {
-	Get(address string, key string) (value string, status bool)
-	Put(address string, key string, value string) (status bool)
-	CoordinateGet(address string, key string) (value string, status bool)
-	CoordinatePut(address string, key string, value string) (status bool)
-	Transfer(address string, data []*Data) (status bool)
+	Get(address string, key string) (value *data.Data, status bool)
+	Put(address string, value *data.Data) (status bool)
+	CoordinateGet(address string, key string) (value *data.Data, status bool)
+	CoordinatePut(address string, value *data.Data) (status bool)
+	Transfer(address string, data []*data.Data) (status bool)
 }
 
 func dial(address string) *rpc.Client {
@@ -55,7 +57,7 @@ func call(address string, method string, args interface{}, reply interface{}) bo
 type RPCPeerClient struct {
 }
 
-func (r *RPCPeerClient) Get(address string, key string) (string, bool) {
+func (r *RPCPeerClient) Get(address string, key string) (*data.Data, bool) {
 	args := &GetArgs{key}
 	reply := &GetReply{}
 
@@ -64,8 +66,8 @@ func (r *RPCPeerClient) Get(address string, key string) (string, bool) {
 	return reply.Value, reply.Ok
 }
 
-func (r *RPCPeerClient) Put(address string, key string, value string) bool {
-	args := &PutArgs{key, value}
+func (r *RPCPeerClient) Put(address string, value *data.Data) bool {
+	args := &PutArgs{value}
 	reply := &PutReply{}
 
 	call(address, "RpcHandler.Put", args, reply)
@@ -73,7 +75,7 @@ func (r *RPCPeerClient) Put(address string, key string, value string) bool {
 	return reply.Ok
 }
 
-func (r *RPCPeerClient) CoordinateGet(address string, key string) (string, bool) {
+func (r *RPCPeerClient) CoordinateGet(address string, key string) (*data.Data, bool) {
 	log.Printf("Forwarding GET request to %s for %s", address, key)
 	args := &GetArgs{key}
 	reply := &GetReply{}
@@ -83,10 +85,10 @@ func (r *RPCPeerClient) CoordinateGet(address string, key string) (string, bool)
 	return reply.Value, reply.Ok
 }
 
-func (r *RPCPeerClient) CoordinatePut(address string, key string, value string) bool {
-	log.Printf("Forwarding PUT request to coordinator %s for %s", address, key)
+func (r *RPCPeerClient) CoordinatePut(address string, value *data.Data) bool {
+	log.Printf("Forwarding PUT request to coordinator %s for %s", address, value.Key)
 
-	args := &PutArgs{key, value}
+	args := &PutArgs{value}
 	reply := &PutReply{}
 
 	call(address, "RpcHandler.CoordinatePut", args, reply)
@@ -94,7 +96,7 @@ func (r *RPCPeerClient) CoordinatePut(address string, key string, value string) 
 	return reply.Ok
 }
 
-func (r *RPCPeerClient) Transfer(address string, data []*Data) bool {
+func (r *RPCPeerClient) Transfer(address string, data []*data.Data) bool {
 	log.Printf("Transferring data to %s - %v", address, data)
 	return true
 }

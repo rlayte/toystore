@@ -1,15 +1,20 @@
 package toystore
 
-import "log"
+import (
+	"fmt"
+	"log"
+
+	"github.com/rlayte/toystore/data"
+)
 
 func (t *Toystore) isCoordinator(address []byte) bool {
 	return string(address) == t.rpcAddress()
 }
 
-func (t *Toystore) CoordinateGet(key string) (string, bool) {
+func (t *Toystore) CoordinateGet(key string) (*data.Data, bool) {
 	log.Printf("%s coordinating GET request %s.", t.Address(), key)
 
-	var value string
+	var value *data.Data
 	var ok bool
 
 	lookup := t.Ring.KeyAddress([]byte(key))
@@ -33,13 +38,22 @@ func (t *Toystore) CoordinateGet(key string) (string, bool) {
 		}
 	}
 
-	log.Println("Coordinate get complete", value, ok, reads)
+	//
+	// Do we just take the last value?
+	// There should be data-version resolution here!
+	//
+
+	value_string := fmt.Sprint(value)
+
+	log.Println("Coordinate get complete", value_string, ok, reads)
 
 	return value, ok && reads >= t.R
 }
 
-func (t *Toystore) CoordinatePut(key string, value string) bool {
-	log.Printf("%s coordinating PUT request %s/%s.", t.Address(), key, value)
+func (t *Toystore) CoordinatePut(value *data.Data) bool {
+	key := value.Key
+	value_string := fmt.Sprint(value.Value)
+	log.Printf("%s coordinating PUT request %s/%s.", t.Address(), key, value_string)
 
 	lookup := t.Ring.KeyAddress([]byte(key))
 	writes := 0
@@ -47,14 +61,14 @@ func (t *Toystore) CoordinatePut(key string, value string) bool {
 	for address, err := lookup(); err == nil; address, err = lookup() {
 		if string(address) != t.rpcAddress() {
 			log.Printf("%s sending PUT request to %s.", t.Address(), address)
-			ok := t.client.Put(string(address), key, value)
+			ok := t.client.Put(string(address), value)
 
 			if ok {
 				writes++
 			}
 		} else {
-			log.Printf("Coordinator %s saving %s/%s.", t.Address(), key, value)
-			ok := t.Data.Put(key, value)
+			log.Printf("Coordinator %s saving %s/%s.", t.Address(), key, value_string)
+			ok := t.Data.Put(value)
 
 			if ok {
 				writes++

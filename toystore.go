@@ -3,6 +3,8 @@ package toystore
 import (
 	"fmt"
 	"log"
+
+	"github.com/rlayte/toystore/data"
 )
 
 type Toystore struct {
@@ -38,30 +40,41 @@ func (t *Toystore) rpcAddress() string {
 // An exposed endpoint to the client.
 // Should function by directing each get or put
 // to the proper machine.
-func (t *Toystore) Get(key string) (value string, ok bool) {
+func (t *Toystore) Get(key string) (interface{}, bool) {
 	lookup := t.Ring.KeyAddress([]byte(key))
 	address, _ := lookup()
+	var data_value *data.Data
+	var ok bool
 
 	if t.isCoordinator(address) {
-		value, ok = t.CoordinateGet(key)
+		data_value, ok = t.CoordinateGet(key)
 	} else {
-		value, ok = t.client.CoordinateGet(string(address), key)
+		data_value, ok = t.client.CoordinateGet(string(address), key)
 	}
+	return data_value.Value, ok
+}
 
+func (t *Toystore) Put(key string, value interface{}) (ok bool) {
+	lookup := t.Ring.KeyAddress([]byte(key))
+	address, _ := lookup()
+	// log.Println("--------", t.Ring)
+
+	if t.isCoordinator(address) {
+		ok = t.CoordinatePut(data.New(key, value))
+	} else {
+		ok = t.client.CoordinatePut(string(address), data.New(key, value))
+	}
 	return
 }
 
-func (t *Toystore) Put(key string, value string) (ok bool) {
-	lookup := t.Ring.KeyAddress([]byte(key))
-	address, _ := lookup()
-	log.Println("--------", t.Ring)
+// Just in case you don't want to deal with Interfaces:
+func (t *Toystore) GetString(key string) (string, bool) {
+	d, ok := t.Get(key)
+	return d.(string), ok
+}
 
-	if t.isCoordinator(address) {
-		ok = t.CoordinatePut(key, value)
-	} else {
-		ok = t.client.CoordinatePut(string(address), key, value)
-	}
-	return
+func (t *Toystore) PutString(key string, value string) bool {
+	return t.Put(key, value) // Just a wrapper, but it gives type checking.
 }
 
 func (t *Toystore) Transfer(address string) {
@@ -71,12 +84,12 @@ func (t *Toystore) Transfer(address string) {
 		if !ok {
 			panic("I was told this key existed but it doesn't...")
 		}
-		log.Printf("Forward %s/%s\n", key, string(val))
+		log.Printf("Forward %s/%s\n", key, fmt.Sprint(val.Value))
 		lookup := t.Ring.KeyAddress([]byte(key))
 		address, _ := lookup()
 
 		if !t.isCoordinator(address) {
-			t.client.CoordinatePut(string(address), key, val)
+			t.client.CoordinatePut(string(address), val)
 		}
 	}
 }
