@@ -4,6 +4,8 @@ import (
 	"log"
 	"net/rpc"
 	"time"
+
+	"github.com/rlayte/toystore/data"
 )
 
 type PeerClient interface {
@@ -11,7 +13,7 @@ type PeerClient interface {
 	Put(address string, key string, value string) (status bool)
 	CoordinateGet(address string, key string) (value string, status bool)
 	CoordinatePut(address string, key string, value string) (status bool)
-	Transfer(address string, data []*Data) (status bool)
+	Transfer(address string, data []*data.Data) (status bool)
 }
 
 func dial(address string) *rpc.Client {
@@ -94,7 +96,7 @@ func (r *RPCPeerClient) CoordinatePut(address string, key string, value string) 
 	return reply.Ok
 }
 
-func (r *RPCPeerClient) Transfer(address string, data []*Data) bool {
+func (r *RPCPeerClient) Transfer(address string, data []*data.Data) bool {
 	log.Printf("Transferring data to %s - %v", address, data)
 	return true
 }

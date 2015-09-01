@@ -1,21 +1,23 @@
 package memory
 
+import "github.com/rlayte/toystore/data"
+
 type MemoryStore struct {
-	data map[string]string
+	data map[string]*data.Data
 }
 
-func (m MemoryStore) Get(key string) (string, bool) {
+func (m MemoryStore) Get(key string) (*data.Data, bool) {
 	value, ok := m.data[key]
 	return value, ok
 }
 
-func (m MemoryStore) Put(key string, value string) bool {
-	m.data[key] = value
+func (m MemoryStore) Put(d *data.Data) bool {
+	m.data[d.Key] = d
 	return true
 }
 
 func New() *MemoryStore {
-	return &MemoryStore{map[string]string{}}
+	return &MemoryStore{map[string]*data.Data{}}
 }
 
 func (m MemoryStore) Keys() []string {
