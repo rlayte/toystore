@@ -40,7 +40,7 @@ func (r *RpcHandler) Get(args *GetArgs, reply *GetReply) error {
 }
 
 func (r *RpcHandler) Put(args *PutArgs, reply *PutReply) error {
-	r.store.Data.Put(args.Key, args.Value)
+	r.store.Data.Put(args.Value)
 	reply.Ok = true
 	return nil
 }
@@ -51,7 +51,7 @@ func (r *RpcHandler) CoordinateGet(args *GetArgs, reply *GetReply) error {
 }
 
 func (r *RpcHandler) CoordinatePut(args *PutArgs, reply *PutReply) error {
-	reply.Ok = r.store.CoordinatePut(args.Key, args.Value)
+	reply.Ok = r.store.CoordinatePut(args.Value)
 	return nil
 }
 

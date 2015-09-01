@@ -8,6 +8,6 @@ type Data struct {
 	Timestamp time.Time
 }
 
-func NewData(key string, value interface{}) *Data {
+func New(key string, value interface{}) *Data {
 	return &Data{key, value, time.Now()}
 }

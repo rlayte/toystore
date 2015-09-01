@@ -14,7 +14,7 @@ func Equal(t *testing.T, a interface{}, b interface{}) {
 
 func TestMemoryStore(t *testing.T) {
 	res := New()
-	res.Put(data.NewData("foo", "bar"))
+	res.Put(data.New("foo", "bar"))
 	str, success := res.Get("foo")
 	if !success {
 		t.Error("Test Memory Store unsuccessful.")

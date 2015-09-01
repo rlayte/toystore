@@ -20,7 +20,7 @@ func (h *HintedHandoff) scan() {
 }
 
 func (h *HintedHandoff) Put(key string, value interface{}, hint string) {
-	h.data[hint] = data.NewData(key, value)
+	h.data[hint] = data.New(key, value)
 }
 
 func NewHintedHandoff(config *Config, client PeerClient) *HintedHandoff {
