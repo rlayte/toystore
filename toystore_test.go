@@ -56,7 +56,7 @@ func startCluster() {
 	}
 
 	log.Println("Waiting for cluster")
-	time.Sleep(time.Second * 30)
+	time.Sleep(time.Second * 10)
 	log.Println("Cluster running")
 }
 
@@ -83,9 +83,7 @@ func TestBasicData(t *testing.T) {
 		h := host()
 		data := url.Values{"key": {key}, "value": {value}}
 
-		log.Printf("Put %s/%s on %s", key, value, h)
 		_, err := http.PostForm(h, data)
-		log.Printf("POST Request complete %s/%s", h, key)
 
 		if err != nil {
 			t.Error(err)
@@ -98,9 +96,7 @@ func TestBasicData(t *testing.T) {
 		h := host()
 		key := fmt.Sprintf("basic-%d", i)
 		value := fmt.Sprintf("basic-value-%d", i)
-		log.Printf("Get %s on %s", key, h)
 		resp, err := http.Get(h + "/" + key)
-		log.Printf("GET Request complete %s/%s", h, key)
 
 		if err != nil {
 			t.Fatal("Error", err)
