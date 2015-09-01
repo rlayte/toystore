@@ -1,5 +1,7 @@
 package toystore
 
+import "time"
+
 type Config struct {
 	ReplicationLevel int
 	W                int
@@ -10,4 +12,5 @@ type Config struct {
 	Host             string
 	SeedAddress      string
 	Store            Store
+	HandoffInterval  time.Duration
 }

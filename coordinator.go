@@ -18,7 +18,7 @@ func (t *Toystore) CoordinateGet(key string) (string, bool) {
 	for address, err := lookup(); err == nil; address, err = lookup() {
 		if string(address) != t.rpcAddress() {
 			log.Printf("%s sending GET request to %s.", t.Address(), address)
-			value, ok = GetCall(string(address), key)
+			value, ok = t.client.Get(string(address), key)
 
 			if ok {
 				reads++
@@ -33,6 +33,8 @@ func (t *Toystore) CoordinateGet(key string) (string, bool) {
 		}
 	}
 
+	log.Println("Coordinate get complete", value, ok, reads)
+
 	return value, ok && reads >= t.R
 }
 
@@ -44,8 +46,8 @@ func (t *Toystore) CoordinatePut(key string, value string) bool {
 
 	for address, err := lookup(); err == nil; address, err = lookup() {
 		if string(address) != t.rpcAddress() {
-			log.Printf("%s sending replication request to %s.", t.Address(), address)
-			ok := PutCall(string(address), key, value)
+			log.Printf("%s sending PUT request to %s.", t.Address(), address)
+			ok := t.client.Put(string(address), key, value)
 
 			if ok {
 				writes++

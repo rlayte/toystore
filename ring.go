@@ -119,6 +119,16 @@ func RingFromList(strs []string) *Ring {
 	return ring
 }
 
+func (r *Ring) Address(key []byte) *Ring {
+	current := r
+
+	for bytes.Compare(current.hash, key) < 1 {
+		current = current.next
+	}
+
+	return current.next
+}
+
 func (r *Ring) KeyAddress(key []byte) func() ([]byte, error) {
 	hashed := Hash(key)
 
@@ -133,6 +143,7 @@ func (r *Ring) KeyAddress(key []byte) func() ([]byte, error) {
 	r.time.Unlock()
 	return func() ([]byte, error) {
 		r.time.Lock()
+		defer r.time.Unlock()
 		output := current.address
 		i++
 
@@ -144,25 +155,24 @@ func (r *Ring) KeyAddress(key []byte) func() ([]byte, error) {
 		if bytes.Compare(current.hash, nil) == 0 {
 			current = current.next
 		}
-		r.time.Unlock()
 		return output, nil
 	}
 }
 
-func (c *Ring) find(address []byte) *Ring {
+func (r *Ring) find(address []byte) *Ring {
 	var current *Ring
-	for current = c.next; bytes.Compare(current.hash, nil) != 0 &&
+	for current = r.next; bytes.Compare(current.hash, nil) != 0 &&
 		bytes.Compare(current.address, address) == -1; current = current.next {
 	}
 	return current
 }
 
-func (c *Ring) Adjacent(first []byte, second []byte) bool {
-	c.time.Lock()
-	next := c.find(first).next
+func (r *Ring) Adjacent(first []byte, second []byte) bool {
+	r.time.Lock()
+	next := r.find(first).next
 	if next.address == nil {
 		next = next.next
 	}
-	c.time.Unlock()
+	r.time.Unlock()
 	return bytes.Compare(next.address, second) == 0
 }

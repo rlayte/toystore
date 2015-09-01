@@ -2,6 +2,7 @@ package toystore
 
 import (
 	"log"
+	"time"
 
 	"github.com/hashicorp/memberlist"
 )
@@ -44,6 +45,7 @@ func (m *Memberlist) Setup(t *Toystore) {
 	memberConfig.BindAddr = t.Host
 	memberConfig.Name = t.Host
 	memberConfig.IndirectChecks = 0
+	memberConfig.GossipInterval = time.Millisecond * 20
 	memberConfig.Events = &MemberlistEvents{t}
 
 	list, err := memberlist.Create(memberConfig)
