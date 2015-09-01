@@ -54,6 +54,7 @@ func (t *Toystore) Get(key string) (value string, ok bool) {
 func (t *Toystore) Put(key string, value string) (ok bool) {
 	lookup := t.Ring.KeyAddress([]byte(key))
 	address, _ := lookup()
+	log.Println("--------", t.Ring)
 
 	if t.isCoordinator(address) {
 		ok = t.CoordinatePut(key, value)

@@ -30,9 +30,9 @@ func (r *Ring) String() string {
 		if !first {
 			buffer.WriteString(" -> ")
 		}
-		buffer.Write(current.address)
+		buffer.WriteString(string(current.address))
 		buffer.WriteString("/")
-		buffer.Write(current.hash)
+		// buffer.WriteString(string(current.hash))
 	}
 	return buffer.String()
 }
@@ -161,8 +161,9 @@ func (r *Ring) KeyAddress(key []byte) func() ([]byte, error) {
 
 func (r *Ring) find(address []byte) *Ring {
 	var current *Ring
+	hash := Hash(address)
 	for current = r.next; bytes.Compare(current.hash, nil) != 0 &&
-		bytes.Compare(current.address, address) == -1; current = current.next {
+		bytes.Compare(current.hash, hash) == -1; current = current.next {
 	}
 	return current
 }

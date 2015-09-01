@@ -56,7 +56,7 @@ func startCluster() {
 	}
 
 	log.Println("Waiting for cluster")
-	time.Sleep(time.Second * 5)
+	time.Sleep(time.Second * 10)
 	log.Println("Cluster running")
 }
 
@@ -73,46 +73,54 @@ func stopCluster() {
 
 }
 
+func randomset(t *testing.T, i int) {
+	key := fmt.Sprintf("basic-%d", i)
+	value := fmt.Sprintf("basic-value-%d", i)
+	h := host()
+	data := url.Values{"key": {key}, "value": {value}}
+
+	_, err := http.PostForm(h, data)
+
+	if err != nil {
+		t.Error(err)
+	}
+}
+
+func randomget(t *testing.T, i int) {
+	h := host()
+	key := fmt.Sprintf("basic-%d", i)
+	value := fmt.Sprintf("basic-value-%d", i)
+	resp, err := http.Get(h + "/" + key)
+
+	if err != nil {
+		t.Fatal("Error", err)
+	}
+
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+
+	if string(body) != value {
+		t.Errorf("%s/%s %s != %s", h, key, string(body), value)
+	}
+}
+
 func TestBasicData(t *testing.T) {
+	var i int
+
 	startCluster()
 	defer stopCluster()
 
-	for i := 0; i < numTests; i++ {
-		go func() {
-			key := fmt.Sprintf("basic-%d", i)
-			value := fmt.Sprintf("basic-value-%d", i)
-			h := host()
-			data := url.Values{"key": {key}, "value": {value}}
+	//// Basic Data Test
 
-			_, err := http.PostForm(h, data)
-
-			if err != nil {
-				t.Error(err)
-			}
-		}()
+	for i = 0; i < numTests; i++ {
+		go randomset(t, i)
 	}
 
 	time.Sleep(time.Second)
 
-	for i := 0; i < numTests; i++ {
-		go func() {
-			h := host()
-			key := fmt.Sprintf("basic-%d", i)
-			value := fmt.Sprintf("basic-value-%d", i)
-			resp, err := http.Get(h + "/" + key)
-
-			if err != nil {
-				t.Fatal("Error", err)
-			}
-
-			defer resp.Body.Close()
-
-			body, err := ioutil.ReadAll(resp.Body)
-
-			if string(body) != value {
-				t.Errorf("%s/%s %s != %s", h, key, string(body), value)
-			}
-		}()
+	for i = 0; i < numTests; i++ {
+		go randomget(t, i)
 	}
 
 	time.Sleep(time.Second)
