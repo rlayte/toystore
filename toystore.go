@@ -20,6 +20,7 @@ type Toystore struct {
 	Data    Store
 	Ring    *Ring
 	Members Members
+	Hints   *HintedHandoff
 
 	client PeerClient
 }
@@ -77,6 +78,18 @@ func (t *Toystore) PutString(key string, value string) bool {
 	return t.Put(key, value) // Just a wrapper, but it gives type checking.
 }
 
+func (t *Toystore) Merge(data *Data) bool {
+	// Only updates the store if the new record is later
+	// Assumes store implementations are thread safe
+
+	current := t.Data.Get(data.key)
+
+	if data.IsLater(current) {
+		t.Data.Put(data)
+	}
+}
+
+// TODO: should use Transfer RPC
 func (t *Toystore) Transfer(address string) {
 	keys := t.Data.Keys()
 	for _, key := range keys {
@@ -127,6 +140,7 @@ func New(config Config, seedMeta interface{}) *Toystore {
 	}
 
 	t.Members = NewMemberlist(t, config.SeedAddress)
+	t.Hints = NewHintedHandoff(config, t.client)
 
 	ReplicationDepth = t.ReplicationLevel
 	t.Ring.AddString(t.rpcAddress())

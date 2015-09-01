@@ -2,10 +2,6 @@ package toystore
 
 import "github.com/rlayte/toystore/data"
 
-type ToystoreRPC struct {
-	store *Toystore
-}
-
 type GetArgs struct {
 	Key string
 }
@@ -20,5 +16,23 @@ type PutArgs struct {
 }
 
 type PutReply struct {
+	Ok bool
+}
+
+type HintArgs struct {
+	Key   string
+	Value string
+	Hint  string
+}
+
+type HintReply struct {
+	Ok bool
+}
+
+type TransferArgs struct {
+	Data []*Data
+}
+
+type TransferReply struct {
 	Ok bool
 }

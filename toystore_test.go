@@ -105,13 +105,11 @@ func randomget(t *testing.T, i int) {
 	}
 }
 
-func TestBasicData(t *testing.T) {
+func TestIntegration__BasicData(t *testing.T) {
 	var i int
 
 	startCluster()
 	defer stopCluster()
-
-	//// Basic Data Test
 
 	for i = 0; i < numTests; i++ {
 		go randomset(t, i)

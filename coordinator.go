@@ -58,7 +58,7 @@ func (t *Toystore) CoordinatePut(value *data.Data) bool {
 	lookup := t.Ring.KeyAddress([]byte(key))
 	writes := 0
 
-	for address, err := lookup(); err == nil; address, err = lookup() {
+	for address, isHint, err := lookup(); err == nil; address, isHint, err = lookup() {
 		if string(address) != t.rpcAddress() {
 			log.Printf("%s sending PUT request to %s.", t.Address(), address)
 			ok := t.client.Put(string(address), value)
