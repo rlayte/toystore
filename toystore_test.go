@@ -15,7 +15,7 @@ import (
 	"time"
 )
 
-var numTests int = 3
+var numTests int = 100
 var cmds []*exec.Cmd = []*exec.Cmd{}
 var m *sync.Mutex = &sync.Mutex{}
 var hosts []string = []string{

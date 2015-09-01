@@ -42,23 +42,18 @@ func (t *Toystore) Get(key string) (value string, ok bool) {
 	lookup := t.Ring.KeyAddress([]byte(key))
 	address, _ := lookup()
 
-	log.Println("Get request", key, string(address))
-
 	if t.isCoordinator(address) {
 		value, ok = t.CoordinateGet(key)
 	} else {
 		value, ok = t.client.CoordinateGet(string(address), key)
 	}
 
-	log.Println("Get request", key, ok, t.isCoordinator(address), string(address), t.Host)
 	return
 }
 
 func (t *Toystore) Put(key string, value string) (ok bool) {
 	lookup := t.Ring.KeyAddress([]byte(key))
 	address, _ := lookup()
-
-	log.Println(t.Host, "Current members", t.Ring.AddressList(), string(address))
 
 	if t.isCoordinator(address) {
 		ok = t.CoordinatePut(key, value)
