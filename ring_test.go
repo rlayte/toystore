@@ -23,7 +23,7 @@ func NotEqual(t *testing.T, a interface{}, b interface{}) {
 	}
 }
 
-func TestAdd(t *testing.T) {
+func TestAddRing(t *testing.T) {
 	a := NewRingHead()
 	b := a.Add(NewRingString("b"))
 	c := a.AddString("c")
@@ -35,7 +35,7 @@ func TestAdd(t *testing.T) {
 	Equal(t, c.next, a)
 }
 
-func TestNode(t *testing.T) {
+func TestNodeRing(t *testing.T) {
 	var val []byte
 	var err error
 	c := RingFromList([]string{"1", "3", "5"})
@@ -51,7 +51,7 @@ func TestNode(t *testing.T) {
 	Equal(t, string(val[0]), "3")
 }
 
-func TestLargeAddress(t *testing.T) {
+func TestLargeAddressRing(t *testing.T) {
 	c := RingFromList([]string{"b", "c", "a", "y"})
 	val, err := c.KeyAddress([]byte("z"))()
 	if err != nil {
@@ -60,7 +60,7 @@ func TestLargeAddress(t *testing.T) {
 	Equal(t, string(val[0]), "a")
 }
 
-func TestAdjacent(t *testing.T) {
+func TestAdjacentRing(t *testing.T) {
 	c := RingFromList([]string{
 		"a",
 		"b",
@@ -118,7 +118,28 @@ func TestEqualRings(t *testing.T) {
 	EqualRings(t, c, a)
 }
 
-func TestRemove(t *testing.T) {
+func TestKeyAddressRing(t *testing.T) {
+	circle := RingFromList([]string{
+		"a",
+		"b",
+		"d",
+	})
+	f := circle.KeyAddress([]byte("c"))
+	res, err := f()
+	if err != nil {
+		panic(err)
+	}
+	Equal(t, string(res), "d")
+
+	f = circle.KeyAddress([]byte("e"))
+	res, err = f()
+	if err != nil {
+		panic(err)
+	}
+	Equal(t, string(res), "a")
+}
+
+func TestRemoveRing(t *testing.T) {
 	circle := RingFromList([]string{
 		"a",
 		"b",
