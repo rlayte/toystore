@@ -95,6 +95,12 @@ func TestAdjacentRing(t *testing.T) {
 
 func EqualRings(t *testing.T, c1 *Ring, c2 *Ring) {
 	for current1, current2 := c1.next, c2.next; bytes.Compare(current1.address, nil) != 0; current1, current2 = current1.next, current2.next {
+		for current1.status == Dead {
+			current1 = current1.next
+		}
+		for current2.status == Dead {
+			current2 = current2.next
+		}
 		if bytes.Compare(current1.address, current2.address) != 0 {
 			t.Errorf("Expected %s, got %s", string(current1.address), string(current2.address))
 		}
