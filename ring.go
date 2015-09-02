@@ -10,6 +10,13 @@ import (
 
 var Zero []byte = make([]byte, 256)
 
+type Status int
+
+const (
+	Alive Status = iota
+	Dead
+)
+
 var Hash func([]byte) []byte = func(bytes []byte) []byte {
 	hash := sha256.New()
 	hash.Write(bytes)
@@ -20,6 +27,7 @@ type Ring struct {
 	address []byte
 	hash    []byte
 	time    *sync.Mutex
+	status  Status
 	next    *Ring
 }
 
@@ -56,6 +64,7 @@ var (
 func NewRingHead() *Ring {
 	ring := new(Ring)
 	ring.hash = []byte{} // empty is head.
+	ring.status = Dead
 	ring.time = &sync.Mutex{}
 	ring.next = ring
 	return ring
@@ -63,6 +72,7 @@ func NewRingHead() *Ring {
 
 func NewRing(address []byte) *Ring {
 	ring := new(Ring)
+	ring.status = Alive
 	ring.address = address
 	ring.hash = Hash(address)
 	return ring
@@ -99,14 +109,13 @@ func (r *Ring) RemoveString(address string) error {
 
 func (r *Ring) Remove(address []byte) error {
 	var current *Ring
-	var last *Ring
 	r.time.Lock()
-	for current, last = r.next, r; bytes.Compare(current.address, address) != 0; current, last = current.next, current {
+	for current = r.next; bytes.Compare(current.address, address) != 0; current = current.next {
 		if string(current.hash) == "" {
 			return errors.New(fmt.Sprintf("No such node in circle: %s\n", address))
 		}
 	}
-	last.next = current.next
+	current.status = Dead
 	r.time.Unlock()
 	return nil
 }
@@ -133,7 +142,7 @@ func (r *Ring) KeyAddress(key []byte) func() ([]byte, []byte, error) {
 	hashed := Hash(key)
 
 	r.time.Lock()
-	current := r.find(hashed)
+	current := r.find(hashed) // there should be no chance of this being dead.
 
 	if bytes.Compare(current.hash, nil) == 0 {
 		current = current.next
@@ -152,9 +161,10 @@ func (r *Ring) KeyAddress(key []byte) func() ([]byte, []byte, error) {
 		}
 
 		current = current.next
-		if bytes.Compare(current.hash, nil) == 0 {
+		for current.status == Dead {
 			current = current.next
 		}
+
 		return output, nil, nil
 	}
 }
@@ -171,8 +181,8 @@ func (r *Ring) find(address []byte) *Ring {
 func (r *Ring) Adjacent(first []byte, second []byte) bool {
 	r.time.Lock()
 	next := r.find(first).next
-	if next.address == nil {
-		next = next.next
+	for next.status == Dead { // guarentees not the head node.
+		next = next.next // only hangs if everything is dead.
 	}
 	r.time.Unlock()
 	return bytes.Compare(next.address, second) == 0
