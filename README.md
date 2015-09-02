@@ -54,4 +54,4 @@ Or run a cluster with
 
 ## Testing
 
-The messaging protocol Dive is very well tested. It's substantially harder to test a larger system like Toystore. We've been testing it manually so far, but we're working on a testing library, [Teardown](http://github.com/rlayte/teardown) to really ensure reliability. 
+The messaging protocol Dive is very well tested. It's a little harder to test a larger system like Toystore. We're trying to make something generalizable with [Teardown](http://github.com/rlayte/teardown) to really ensure reliability, but right now running `go test` will launch a suite of integration and unit tests.
