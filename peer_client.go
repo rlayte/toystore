@@ -98,7 +98,7 @@ func (r *RPCPeerClient) CoordinatePut(address string, value *data.Data) bool {
 }
 
 func (r *RPCPeerClient) HintPut(address string, hint string, data *data.Data) bool {
-	log.Printf("Sending hint to %s for %s (%s/%s)", address, hint, data)
+	log.Printf("Sending hint to %s for %s (%s)", address, hint, data)
 
 	args := &HintArgs{data, hint}
 	reply := &HintReply{}

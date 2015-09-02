@@ -148,14 +148,14 @@ func (r *Ring) KeyAddress(key []byte) func() ([]byte, []byte, error) {
 		i++
 
 		if i > ReplicationDepth {
-			return []byte{}, []byte{}, errors.New("No more replications.")
+			return []byte{}, nil, errors.New("No more replications.")
 		}
 
 		current = current.next
 		if bytes.Compare(current.hash, nil) == 0 {
 			current = current.next
 		}
-		return output, []byte{}, nil
+		return output, nil, nil
 	}
 }
 

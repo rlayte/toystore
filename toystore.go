@@ -45,15 +45,15 @@ func (t *Toystore) rpcAddress() string {
 func (t *Toystore) Get(key string) (interface{}, bool) {
 	lookup := t.Ring.KeyAddress([]byte(key))
 	address, _, _ := lookup()
-	var data_value *data.Data
+	var data *data.Data
 	var ok bool
 
 	if t.isCoordinator(address) {
-		data_value, ok = t.CoordinateGet(key)
+		data, ok = t.CoordinateGet(key)
 	} else {
-		data_value, ok = t.client.CoordinateGet(string(address), key)
+		data, ok = t.client.CoordinateGet(string(address), key)
 	}
-	return data_value.Value, ok
+	return data.Value, ok
 }
 
 func (t *Toystore) Put(key string, value interface{}) (ok bool) {
