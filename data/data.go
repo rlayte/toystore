@@ -1,6 +1,9 @@
 package data
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 type Data struct {
 	Key       string
@@ -10,6 +13,10 @@ type Data struct {
 
 func (d *Data) IsLater(other *Data) bool {
 	return d.Timestamp.After(other.Timestamp)
+}
+
+func (d *Data) String() string {
+	return fmt.Sprintf("%s/%v", d.Key, d.Value)
 }
 
 func New(key string, value interface{}) *Data {
