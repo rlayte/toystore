@@ -1,6 +1,7 @@
 package toystore
 
 import (
+	"encoding/gob"
 	"fmt"
 	"log"
 
@@ -144,6 +145,7 @@ func New(config Config, seedMeta interface{}) *Toystore {
 	t.Members = NewMemberlist(t, config.SeedAddress)
 	t.Hints = NewHintedHandoff(config, t.client)
 
+	gob.Register(data.Data{})
 	ReplicationDepth = t.ReplicationLevel
 	t.Ring.AddString(t.rpcAddress())
 	NewRpcHandler(t)

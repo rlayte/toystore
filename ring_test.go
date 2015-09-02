@@ -39,12 +39,12 @@ func TestNodeRing(t *testing.T) {
 	var val []byte
 	var err error
 	c := RingFromList([]string{"1", "3", "5"})
-	val, err = c.KeyAddress([]byte("4"))()
+	val, _, err = c.KeyAddress([]byte("4"))()
 	if err != nil {
 		panic(err)
 	}
 	Equal(t, string(val[0]), "5")
-	val, err = c.KeyAddress([]byte("3"))()
+	val, _, err = c.KeyAddress([]byte("3"))()
 	if err != nil {
 		panic(err)
 	}
@@ -53,7 +53,7 @@ func TestNodeRing(t *testing.T) {
 
 func TestLargeAddressRing(t *testing.T) {
 	c := RingFromList([]string{"b", "c", "a", "y"})
-	val, err := c.KeyAddress([]byte("z"))()
+	val, _, err := c.KeyAddress([]byte("z"))()
 	if err != nil {
 		panic(err)
 	}
@@ -125,14 +125,14 @@ func TestKeyAddressRing(t *testing.T) {
 		"d",
 	})
 	f := circle.KeyAddress([]byte("c"))
-	res, err := f()
+	res, _, err := f()
 	if err != nil {
 		panic(err)
 	}
 	Equal(t, string(res), "d")
 
 	f = circle.KeyAddress([]byte("e"))
-	res, err = f()
+	res, _, err = f()
 	if err != nil {
 		panic(err)
 	}
