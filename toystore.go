@@ -1,6 +1,7 @@
 package toystore
 
 import (
+	"encoding/gob"
 	"fmt"
 	"log"
 
@@ -20,6 +21,7 @@ type Toystore struct {
 	Data    Store
 	Ring    *Ring
 	Members Members
+	Hints   *HintedHandoff
 
 	client PeerClient
 }
@@ -42,22 +44,26 @@ func (t *Toystore) rpcAddress() string {
 // to the proper machine.
 func (t *Toystore) Get(key string) (interface{}, bool) {
 	lookup := t.Ring.KeyAddress([]byte(key))
-	address, _ := lookup()
-	var data_value *data.Data
+	address, _, _ := lookup()
+	var data *data.Data
 	var ok bool
 
 	if t.isCoordinator(address) {
-		data_value, ok = t.CoordinateGet(key)
+		data, ok = t.CoordinateGet(key)
 	} else {
-		data_value, ok = t.client.CoordinateGet(string(address), key)
+		data, ok = t.client.CoordinateGet(string(address), key)
 	}
-	return data_value.Value, ok
+
+	if ok {
+		return data.Value, ok
+	} else {
+		return nil, ok
+	}
 }
 
 func (t *Toystore) Put(key string, value interface{}) (ok bool) {
 	lookup := t.Ring.KeyAddress([]byte(key))
-	address, _ := lookup()
-	// log.Println("--------", t.Ring)
+	address, _, _ := lookup()
 
 	if t.isCoordinator(address) {
 		ok = t.CoordinatePut(data.New(key, value))
@@ -77,6 +83,21 @@ func (t *Toystore) PutString(key string, value string) bool {
 	return t.Put(key, value) // Just a wrapper, but it gives type checking.
 }
 
+func (t *Toystore) Merge(data *data.Data) bool {
+	// Only updates the store if the new record is later
+	// Assumes store implementations are thread safe
+
+	current, _ := t.Data.Get(data.Key)
+
+	if data.IsLater(current) {
+		t.Data.Put(data)
+		return true
+	}
+
+	return false
+}
+
+// TODO: should use Transfer RPC
 func (t *Toystore) Transfer(address string) {
 	keys := t.Data.Keys()
 	for _, key := range keys {
@@ -86,7 +107,7 @@ func (t *Toystore) Transfer(address string) {
 		}
 		log.Printf("Forward %s/%s\n", key, fmt.Sprint(val.Value))
 		lookup := t.Ring.KeyAddress([]byte(key))
-		address, _ := lookup()
+		address, _, _ := lookup()
 
 		if !t.isCoordinator(address) {
 			t.client.CoordinatePut(string(address), val)
@@ -112,7 +133,7 @@ func (t *Toystore) RemoveMember(member Member) {
 	}
 }
 
-func New(config Config, seedMeta interface{}) *Toystore {
+func New(config Config) *Toystore {
 	t := &Toystore{
 		ReplicationLevel: config.ReplicationLevel,
 		W:                config.W,
@@ -127,7 +148,9 @@ func New(config Config, seedMeta interface{}) *Toystore {
 	}
 
 	t.Members = NewMemberlist(t, config.SeedAddress)
+	t.Hints = NewHintedHandoff(config, t.client)
 
+	gob.Register(data.Data{})
 	ReplicationDepth = t.ReplicationLevel
 	t.Ring.AddString(t.rpcAddress())
 	NewRpcHandler(t)

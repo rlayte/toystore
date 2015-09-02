@@ -56,7 +56,7 @@ func startCluster() {
 	}
 
 	log.Println("Waiting for cluster")
-	time.Sleep(time.Second * 10)
+	time.Sleep(time.Second * 15)
 	log.Println("Cluster running")
 }
 
@@ -105,22 +105,20 @@ func randomget(t *testing.T, i int) {
 	}
 }
 
-func TestBasicData(t *testing.T) {
+func TestIntegration__BasicData(t *testing.T) {
 	var i int
 
 	startCluster()
 	defer stopCluster()
 
-	//// Basic Data Test
-
 	for i = 0; i < numTests; i++ {
-		go randomset(t, i)
+		randomset(t, i)
 	}
 
-	time.Sleep(time.Second)
+	time.Sleep(time.Second * 2)
 
 	for i = 0; i < numTests; i++ {
-		go randomget(t, i)
+		randomget(t, i)
 	}
 
 	time.Sleep(time.Second)

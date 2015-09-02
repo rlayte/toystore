@@ -1,8 +1,11 @@
 package toystore
 
 import (
+	"encoding/gob"
 	"net"
 	"net/rpc"
+
+	"github.com/rlayte/toystore/data"
 )
 
 type PeerHandler interface {
@@ -55,7 +58,25 @@ func (r *RpcHandler) CoordinatePut(args *PutArgs, reply *PutReply) error {
 	return nil
 }
 
+func (r *RpcHandler) HintPut(args *HintArgs, reply *HintReply) error {
+	r.store.Hints.Put(args.Data, args.Hint)
+	reply.Ok = true
+	return nil
+}
+
+func (r *RpcHandler) Transfer(args *TransferArgs, reply *TransferReply) error {
+	ok := true
+
+	for _, item := range args.Data {
+		r.store.Data.Put(item)
+	}
+
+	reply.Ok = ok
+	return nil
+}
+
 func NewRpcHandler(store *Toystore) *RpcHandler {
+	gob.Register(data.Data{})
 	rpcs := rpc.NewServer()
 	s := &RpcHandler{store}
 	rpcs.Register(s)

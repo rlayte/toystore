@@ -20,7 +20,7 @@ func (t *Toystore) CoordinateGet(key string) (*data.Data, bool) {
 	lookup := t.Ring.KeyAddress([]byte(key))
 	reads := 0
 
-	for address, err := lookup(); err == nil; address, err = lookup() {
+	for address, _, err := lookup(); err == nil; address, _, err = lookup() {
 		if string(address) != t.rpcAddress() {
 			log.Printf("%s sending GET request to %s.", t.Address(), address)
 			value, ok = t.client.Get(string(address), key)
@@ -58,10 +58,16 @@ func (t *Toystore) CoordinatePut(value *data.Data) bool {
 	lookup := t.Ring.KeyAddress([]byte(key))
 	writes := 0
 
-	for address, err := lookup(); err == nil; address, err = lookup() {
+	for address, hint, err := lookup(); err == nil; address, hint, err = lookup() {
 		if string(address) != t.rpcAddress() {
 			log.Printf("%s sending PUT request to %s.", t.Address(), address)
-			ok := t.client.Put(string(address), value)
+			var ok bool
+
+			if hint != nil {
+				ok = t.client.HintPut(string(address), string(hint), value)
+			} else {
+				ok = t.client.Put(string(address), value)
+			}
 
 			if ok {
 				writes++
