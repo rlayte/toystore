@@ -27,15 +27,15 @@ func (h *HintedHandoff) scan() {
 	}
 }
 
-func (h *HintedHandoff) Put(key string, value interface{}, hint string) {
+func (h *HintedHandoff) Put(value *data.Data, hint string) {
 	if _, ok := h.data[hint]; !ok {
 		h.data[hint] = []*data.Data{}
 	}
 
-	h.data[hint] = append(h.data[hint], data.New(key, value))
+	h.data[hint] = append(h.data[hint], value)
 }
 
-func NewHintedHandoff(config *Config, client PeerClient) *HintedHandoff {
+func NewHintedHandoff(config Config, client PeerClient) *HintedHandoff {
 	h := &HintedHandoff{
 		ScanInterval: config.HandoffInterval,
 		data:         map[string][]*data.Data{},

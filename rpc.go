@@ -20,9 +20,8 @@ type PutReply struct {
 }
 
 type HintArgs struct {
-	Key   string
-	Value string
-	Hint  string
+	Data *data.Data
+	Hint string
 }
 
 type HintReply struct {
@@ -30,7 +29,7 @@ type HintReply struct {
 }
 
 type TransferArgs struct {
-	Data []*Data
+	Data []*data.Data
 }
 
 type TransferReply struct {

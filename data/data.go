@@ -8,6 +8,10 @@ type Data struct {
 	Timestamp time.Time
 }
 
+func (d *Data) IsLater(other *Data) bool {
+	return d.Timestamp.After(other.Timestamp)
+}
+
 func New(key string, value interface{}) *Data {
 	return &Data{key, value, time.Now()}
 }
