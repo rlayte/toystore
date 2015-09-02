@@ -53,7 +53,12 @@ func (t *Toystore) Get(key string) (interface{}, bool) {
 	} else {
 		data, ok = t.client.CoordinateGet(string(address), key)
 	}
-	return data.Value, ok
+
+	if ok {
+		return data.Value, ok
+	} else {
+		return nil, ok
+	}
 }
 
 func (t *Toystore) Put(key string, value interface{}) (ok bool) {
