@@ -133,7 +133,7 @@ func (t *Toystore) RemoveMember(member Member) {
 	}
 }
 
-func New(config Config, seedMeta interface{}) *Toystore {
+func New(config Config) *Toystore {
 	t := &Toystore{
 		ReplicationLevel: config.ReplicationLevel,
 		W:                config.W,
