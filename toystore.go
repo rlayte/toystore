@@ -43,7 +43,7 @@ func (t *Toystore) rpcAddress() string {
 // to the proper machine.
 func (t *Toystore) Get(key string) (interface{}, bool) {
 	lookup := t.Ring.KeyAddress([]byte(key))
-	address, _ := lookup()
+	address, _, _ := lookup()
 	var data_value *data.Data
 	var ok bool
 
@@ -57,8 +57,7 @@ func (t *Toystore) Get(key string) (interface{}, bool) {
 
 func (t *Toystore) Put(key string, value interface{}) (ok bool) {
 	lookup := t.Ring.KeyAddress([]byte(key))
-	address, _ := lookup()
-	// log.Println("--------", t.Ring)
+	address, _, _ := lookup()
 
 	if t.isCoordinator(address) {
 		ok = t.CoordinatePut(data.New(key, value))
@@ -78,15 +77,18 @@ func (t *Toystore) PutString(key string, value string) bool {
 	return t.Put(key, value) // Just a wrapper, but it gives type checking.
 }
 
-func (t *Toystore) Merge(data *Data) bool {
+func (t *Toystore) Merge(data *data.Data) bool {
 	// Only updates the store if the new record is later
 	// Assumes store implementations are thread safe
 
-	current := t.Data.Get(data.key)
+	current, _ := t.Data.Get(data.Key)
 
 	if data.IsLater(current) {
 		t.Data.Put(data)
+		return true
 	}
+
+	return false
 }
 
 // TODO: should use Transfer RPC
@@ -99,7 +101,7 @@ func (t *Toystore) Transfer(address string) {
 		}
 		log.Printf("Forward %s/%s\n", key, fmt.Sprint(val.Value))
 		lookup := t.Ring.KeyAddress([]byte(key))
-		address, _ := lookup()
+		address, _, _ := lookup()
 
 		if !t.isCoordinator(address) {
 			t.client.CoordinatePut(string(address), val)

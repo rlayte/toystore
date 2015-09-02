@@ -13,6 +13,7 @@ type PeerClient interface {
 	Put(address string, value *data.Data) (status bool)
 	CoordinateGet(address string, key string) (value *data.Data, status bool)
 	CoordinatePut(address string, value *data.Data) (status bool)
+	HintPut(address string, hint string, value *data.Data) (status bool)
 	Transfer(address string, data []*data.Data) (status bool)
 }
 
@@ -97,9 +98,9 @@ func (r *RPCPeerClient) CoordinatePut(address string, value *data.Data) bool {
 }
 
 func (r *RPCPeerClient) HintPut(address string, hint string, data *data.Data) bool {
-	log.Printf("Sending hint to %s for %s (%s/%s)", address, hint, key, value)
+	log.Printf("Sending hint to %s for %s (%s/%s)", address, hint, data)
 
-	args := &HintArgs{key, value, hint}
+	args := &HintArgs{data, hint}
 	reply := &HintReply{}
 
 	call(address, "RpcHandler.HintPut", args, reply)

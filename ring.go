@@ -129,7 +129,7 @@ func (r *Ring) Address(key []byte) *Ring {
 	return current.next
 }
 
-func (r *Ring) KeyAddress(key []byte) func() ([]byte, error) {
+func (r *Ring) KeyAddress(key []byte) func() ([]byte, []byte, error) {
 	hashed := Hash(key)
 
 	r.time.Lock()
@@ -141,21 +141,21 @@ func (r *Ring) KeyAddress(key []byte) func() ([]byte, error) {
 
 	i := 0
 	r.time.Unlock()
-	return func() ([]byte, error) {
+	return func() ([]byte, []byte, error) {
 		r.time.Lock()
 		defer r.time.Unlock()
 		output := current.address
 		i++
 
 		if i > ReplicationDepth {
-			return []byte{}, errors.New("No more replications.")
+			return []byte{}, []byte{}, errors.New("No more replications.")
 		}
 
 		current = current.next
 		if bytes.Compare(current.hash, nil) == 0 {
 			current = current.next
 		}
-		return output, nil
+		return output, []byte{}, nil
 	}
 }
 

@@ -56,7 +56,8 @@ func (r *RpcHandler) CoordinatePut(args *PutArgs, reply *PutReply) error {
 }
 
 func (r *RpcHandler) HintPut(args *HintArgs, reply *HintReply) error {
-	reply.Ok = r.store.Hints.Put(args.Key, args.Value, args.Hint)
+	r.store.Hints.Put(args.Data, args.Hint)
+	reply.Ok = true
 	return nil
 }
 
@@ -64,7 +65,7 @@ func (r *RpcHandler) Transfer(args *TransferArgs, reply *TransferReply) error {
 	ok := true
 
 	for _, item := range args.Data {
-		r.store.Data.Put(item.key, item.value)
+		r.store.Data.Put(item)
 	}
 
 	reply.Ok = ok
