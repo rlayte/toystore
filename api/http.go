@@ -1,3 +1,13 @@
+// api/http is an example application of Toystore.
+// It wraps the library in a simple http API that accepts and
+// returns json.
+//
+// Usage:
+//  # Start the seed
+//  go run api/http.go 127.0.0.2
+//
+//  # Start other nodes
+//  go run api/http.go 127.0.0.3/n
 package main
 
 import (
