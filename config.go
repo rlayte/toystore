@@ -15,9 +15,6 @@ type Config struct {
 	// to be successful.
 	R int
 
-	// ClientPort is the port Toystore will use to serve client requests.
-	ClientPort int
-
 	// RPCPort is the port Toystore will use for RPC between nodes.
 	RPCPort int
 

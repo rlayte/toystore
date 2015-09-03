@@ -22,9 +22,6 @@ type Toystore struct {
 	// Number of successful reads required.
 	R int
 
-	// Port number to serve client requests.
-	Port int
-
 	// Port number to serve RPC requests between nodes.
 	RPCPort int
 
@@ -163,7 +160,6 @@ func New(config Config) *Toystore {
 		W:                config.W,
 		R:                config.R,
 		Host:             config.Host,
-		Port:             config.ClientPort,
 		RPCPort:          config.RPCPort,
 		Ring:             NewRingHead(),
 		Data:             config.Store,

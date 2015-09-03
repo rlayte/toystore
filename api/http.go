@@ -29,6 +29,10 @@ func (a *Api) Meta(w http.ResponseWriter, r *http.Request, params httprouter.Par
 	fmt.Fprint(w, "Node meta data\n")
 }
 
+func (a *Api) Address() string {
+	return fmt.Sprintf("%s:%d", a.store.Host, 3000)
+}
+
 func (a *Api) Get(w http.ResponseWriter, r *http.Request, params httprouter.Params) {
 	key := params.ByName("key")
 	value, ok := a.store.Get(key)
@@ -62,8 +66,8 @@ func (a *Api) Serve() {
 	router.GET("/:key", a.Get)
 	router.POST("/", a.Put)
 
-	log.Println("Running server on", a.store.Address())
-	log.Fatal(http.ListenAndServe(a.store.Address(), router))
+	log.Println("Running server on", a.Address())
+	log.Fatal(http.ListenAndServe(a.Address(), router))
 }
 
 func main() {
@@ -79,7 +83,6 @@ func main() {
 		ReplicationLevel: 3,
 		W:                1,
 		R:                1,
-		ClientPort:       3000,
 		RPCPort:          3001,
 		Host:             host,
 		Store:            memory.New(),
@@ -89,9 +92,7 @@ func main() {
 		config.SeedAddress = seed
 	}
 
-	seedRPCAddress := fmt.Sprintf("%s:%d", seed, config.RPCPort)
-	metaData := toystore.ToystoreMetaData{RPCAddress: seedRPCAddress}
-	store := toystore.New(config, metaData)
+	store := toystore.New(config)
 	api := Api{store}
 
 	api.Serve()
