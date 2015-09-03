@@ -6,6 +6,9 @@ import (
 	"github.com/rlayte/toystore/data"
 )
 
+// HintedHandoff keeps track of data that should be stored on other
+// nodes. It periodically scans this data and attempts to transfer
+// it to the correct node. It then removes any data that is transferred.
 type HintedHandoff struct {
 	ScanInterval time.Duration
 
@@ -13,6 +16,8 @@ type HintedHandoff struct {
 	client PeerClient
 }
 
+// scan periodically attempts to transfer hinted data to its correct
+// location. If it removes any data it no longer needs.
 func (h *HintedHandoff) scan() {
 	for {
 		for node, hints := range h.data {
@@ -27,6 +32,7 @@ func (h *HintedHandoff) scan() {
 	}
 }
 
+// Put adds a new value for the hinted location.
 func (h *HintedHandoff) Put(value *data.Data, hint string) {
 	if _, ok := h.data[hint]; !ok {
 		h.data[hint] = []*data.Data{}
@@ -35,6 +41,8 @@ func (h *HintedHandoff) Put(value *data.Data, hint string) {
 	h.data[hint] = append(h.data[hint], value)
 }
 
+// NewHintedHandoff returns a new instance and starts the scan process
+// using the HandoffInterval defined in config.
 func NewHintedHandoff(config Config, client PeerClient) *HintedHandoff {
 	h := &HintedHandoff{
 		ScanInterval: config.HandoffInterval,
