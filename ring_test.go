@@ -38,7 +38,7 @@ func TestAddRing(t *testing.T) {
 func TestNodeRing(t *testing.T) {
 	var val []byte
 	var err error
-	c := RingFromList([]string{"1", "3", "5"})
+	c := RingFromList([]string{"1", "3", "5", "7"})
 	val, _, err = c.KeyAddress([]byte("4"))()
 	if err != nil {
 		panic(err)

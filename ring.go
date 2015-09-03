@@ -158,6 +158,7 @@ func (r *Ring) KeyAddress(key []byte) func() ([]byte, []byte, error) {
 			return nil, nil, errors.New("No more replications.")
 		}
 
+		current = current.next
 		if bytes.Compare(current.address, nil) == 0 {
 			current = current.next
 		}
