@@ -17,7 +17,7 @@ func (t *Toystore) isCoordinator(address []byte) bool {
 // track of success/failures. If there are more successful reads than config.R
 // it returns the value and true. Otherwise it returns the value and false.
 func (t *Toystore) CoordinateGet(key string) (*data.Data, bool) {
-	log.Printf("%s coordinating GET request %s.", t.Host, key)
+	log.Printf("Coordinating GET request %s.", key)
 
 	var value *data.Data
 	var ok bool
@@ -26,15 +26,16 @@ func (t *Toystore) CoordinateGet(key string) (*data.Data, bool) {
 	reads := 0
 
 	for address, _, err := lookup(); err == nil; address, _, err = lookup() {
+		log.Println("Remote address: %s vs %s", string(address), t.rpcAddress())
 		if string(address) != t.rpcAddress() {
-			log.Printf("%s sending GET request to %s.", t.Host, address)
+			log.Printf("GET request to %s.", address)
 			value, ok = t.client.Get(string(address), key)
 
 			if ok {
 				reads++
 			}
 		} else {
-			log.Printf("Coordinator %s retrieving %s.", t.Host, key)
+			log.Printf("Coordinator retrieving %s.", key)
 			value, ok = t.Data.Get(key)
 
 			if ok {
@@ -63,7 +64,7 @@ func (t *Toystore) CoordinatePut(value *data.Data) bool {
 
 	for address, hint, err := lookup(); err == nil; address, hint, err = lookup() {
 		if string(address) != t.rpcAddress() {
-			log.Printf("%s sending PUT request to %s.", t.Host, address)
+			log.Printf("PUT request to %s.", address)
 			var ok bool
 
 			if hint != nil {
@@ -76,7 +77,7 @@ func (t *Toystore) CoordinatePut(value *data.Data) bool {
 				writes++
 			}
 		} else {
-			log.Printf("Coordinator %s saving %s.", t.Host, value)
+			log.Printf("Coordinator saving %s.", value)
 			ok := t.Data.Put(value)
 
 			if ok {

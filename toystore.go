@@ -132,7 +132,7 @@ func (t *Toystore) Transfer(address string) {
 // If the new node is adjacent to the current node then it transfers
 // any keys in its range that should be owned by the new node.
 func (t *Toystore) AddMember(member Member) {
-	log.Printf("%s adding member %s", t.Host, member.Name())
+	log.Printf("Adding member %s", member.Name())
 	t.Ring.AddString(member.Address())
 	localAddress := t.rpcAddress()
 	adjacent := t.Ring.Adjacent([]byte(localAddress), member.Meta())
@@ -145,8 +145,7 @@ func (t *Toystore) AddMember(member Member) {
 // RemoveMember removes a member from the hash ring.
 func (t *Toystore) RemoveMember(member Member) {
 	if member.Address() != t.rpcAddress() {
-		log.Printf("%s removing member %s", t.Host, member.Name())
-		// TODO: should fail nodes rather than removing them.
+		log.Printf("Removing member %s", member.Name())
 		t.Ring.RemoveString(member.Address())
 	}
 }
@@ -166,6 +165,10 @@ func New(config Config) *Toystore {
 
 		client: NewRpcClient(),
 	}
+
+	// Set all logs to show current host
+	log.SetFlags(0)
+	log.SetPrefix(fmt.Sprintf("[Toystore] %s: ", t.Host))
 
 	// Start new gossip protocol
 	t.Members = NewMemberlist(t, config.SeedAddress)

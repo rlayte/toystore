@@ -56,7 +56,7 @@ func startCluster() {
 	}
 
 	log.Println("Waiting for cluster")
-	time.Sleep(time.Second * 15)
+	time.Sleep(time.Second * 30)
 	log.Println("Cluster running")
 }
 

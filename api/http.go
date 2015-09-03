@@ -21,6 +21,12 @@ import (
 	"github.com/rlayte/toystore/adapters/memory"
 )
 
+const (
+	SeedAddress string = "127.0.0.2"
+	ClientPort  int    = 3000
+	RpcPort     int    = 3001
+)
+
 type Api struct {
 	store *toystore.Toystore
 }
@@ -59,6 +65,7 @@ func (a *Api) Put(w http.ResponseWriter, r *http.Request, params httprouter.Para
 	}
 }
 
+// Serve starts a new http server and defines necessary routes.
 func (a *Api) Serve() {
 	router := httprouter.New()
 
@@ -76,20 +83,19 @@ func main() {
 		os.Exit(1)
 	}
 
-	seed := "127.0.0.2"
 	host := os.Args[1]
 
 	config := toystore.Config{
 		ReplicationLevel: 3,
 		W:                1,
 		R:                1,
-		RPCPort:          3001,
+		RPCPort:          RpcPort,
 		Host:             host,
 		Store:            memory.New(),
 	}
 
-	if host != seed {
-		config.SeedAddress = seed
+	if host != SeedAddress {
+		config.SeedAddress = SeedAddress
 	}
 
 	store := toystore.New(config)
