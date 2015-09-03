@@ -69,6 +69,7 @@ type RpcClient struct {
 // Get makes an RPC to the address to find the specified key and returns
 // the value and an existence bool.
 func (r *RpcClient) Get(address string, key string) (*data.Data, bool) {
+	log.Printf("GET request to %s for %s", address, key)
 	args := &GetArgs{key}
 	reply := &GetReply{}
 
@@ -80,6 +81,7 @@ func (r *RpcClient) Get(address string, key string) (*data.Data, bool) {
 // Put makes an RPC to the address to add the Data value and returns a boolean
 // representing the status of this operation.
 func (r *RpcClient) Put(address string, value *data.Data) bool {
+	log.Printf("PUT request to %s for %v", address, value)
 	args := &PutArgs{value}
 	reply := &PutReply{}
 

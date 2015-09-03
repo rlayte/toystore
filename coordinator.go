@@ -8,8 +8,8 @@ import (
 
 // isCoordinator returns true if the current node is the owner
 // of the provided address. Otherwise it returns false.
-func (t *Toystore) isCoordinator(address []byte) bool {
-	return string(address) == t.rpcAddress()
+func (t *Toystore) isCoordinator(address string) bool {
+	return address == t.rpcAddress()
 }
 
 // CoordinateGet organizes the get request between the collaborating nodes.
@@ -22,20 +22,18 @@ func (t *Toystore) CoordinateGet(key string) (*data.Data, bool) {
 	var value *data.Data
 	var ok bool
 
-	lookup := t.Ring.KeyAddress([]byte(key))
+	nodes := t.Ring.FindN(key, t.ReplicationLevel)
 	reads := 0
 
-	for address, _, err := lookup(); err == nil; address, _, err = lookup() {
-		log.Println("Remote address: %s vs %s", string(address), t.rpcAddress())
-		if string(address) != t.rpcAddress() {
-			log.Printf("GET request to %s.", address)
-			value, ok = t.client.Get(string(address), key)
+	for _, address := range nodes {
+		if address != t.rpcAddress() {
+			value, ok = t.client.Get(address, key)
 
 			if ok {
 				reads++
 			}
 		} else {
-			log.Printf("Coordinator retrieving %s.", key)
+			log.Printf("Coordinator retrieving %s", key)
 			value, ok = t.Data.Get(key)
 
 			if ok {
@@ -57,27 +55,26 @@ func (t *Toystore) CoordinateGet(key string) (*data.Data, bool) {
 // the value on other nodes with a hint to its correct location.
 func (t *Toystore) CoordinatePut(value *data.Data) bool {
 	key := value.Key
-	log.Printf("%s coordinating PUT request %s.", t.Host, value)
+	log.Printf("Coordinating PUT request %v", value)
 
-	lookup := t.Ring.KeyAddress([]byte(key))
+	nodes := t.Ring.FindN(key, t.ReplicationLevel)
 	writes := 0
 
-	for address, hint, err := lookup(); err == nil; address, hint, err = lookup() {
-		if string(address) != t.rpcAddress() {
-			log.Printf("PUT request to %s.", address)
+	for address, hint := range nodes {
+		if address != t.rpcAddress() {
 			var ok bool
 
-			if hint != nil {
-				ok = t.client.HintPut(string(address), string(hint), value)
+			if hint != address {
+				ok = t.client.HintPut(address, string(hint), value)
 			} else {
-				ok = t.client.Put(string(address), value)
+				ok = t.client.Put(address, value)
 			}
 
 			if ok {
 				writes++
 			}
 		} else {
-			log.Printf("Coordinator saving %s.", value)
+			log.Printf("Coordinator saving %s", value)
 			ok := t.Data.Put(value)
 
 			if ok {

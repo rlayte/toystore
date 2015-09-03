@@ -32,7 +32,7 @@ type Toystore struct {
 	Data Store
 
 	// Hash ring for nodes in the cluster.
-	Ring *Ring
+	Ring *HashRing
 
 	// Concrete Members implementation to represent the current cluster state.
 	Members Members
@@ -54,8 +54,7 @@ func (t *Toystore) rpcAddress() string {
 // If the key is on the current node then it coordinates the operation.
 // Otherwise it sends the coordination request to the correct node.
 func (t *Toystore) Get(key string) (interface{}, bool) {
-	lookup := t.Ring.KeyAddress([]byte(key))
-	address, _, _ := lookup()
+	address := t.Ring.Find(key)
 	var data *data.Data
 	var ok bool
 
@@ -77,8 +76,7 @@ func (t *Toystore) Get(key string) (interface{}, bool) {
 // If the key is owned by current node then it coordinates the operation.
 // Otherwise it sends the coordination request to the correct node.
 func (t *Toystore) Put(key string, value interface{}) (ok bool) {
-	lookup := t.Ring.KeyAddress([]byte(key))
-	address, _, _ := lookup()
+	address := t.Ring.Find(key)
 
 	if t.isCoordinator(address) {
 		ok = t.CoordinatePut(data.New(key, value))
@@ -111,21 +109,18 @@ func (t *Toystore) Merge(data *data.Data) bool {
 
 // Transfer sends a list of keys to another node in the cluster.
 func (t *Toystore) Transfer(address string) {
-	// TODO: should use Transfer RPC
 	keys := t.Data.Keys()
-	for _, key := range keys {
-		val, ok := t.Data.Get(key)
-		if !ok {
-			panic("I was told this key existed but it doesn't...")
-		}
-		log.Printf("Forward %s/%s\n", key, fmt.Sprint(val.Value))
-		lookup := t.Ring.KeyAddress([]byte(key))
-		address, _, _ := lookup()
+	items := []*data.Data{}
 
-		if !t.isCoordinator(address) {
-			t.client.CoordinatePut(string(address), val)
+	for _, key := range keys {
+		val, _ := t.Data.Get(key)
+
+		if t.Ring.Find(key) == address {
+			items = append(items, val)
 		}
 	}
+
+	t.client.Transfer(address, items)
 }
 
 // AddMember adds a new node to the hash ring.
@@ -133,9 +128,9 @@ func (t *Toystore) Transfer(address string) {
 // any keys in its range that should be owned by the new node.
 func (t *Toystore) AddMember(member Member) {
 	log.Printf("Adding member %s", member.Name())
-	t.Ring.AddString(member.Address())
+	t.Ring.Add(member.Address())
 	localAddress := t.rpcAddress()
-	adjacent := t.Ring.Adjacent([]byte(localAddress), member.Meta())
+	adjacent := t.Ring.Adjacent(localAddress, member.Address())
 
 	if adjacent {
 		t.Transfer(member.Address())
@@ -146,7 +141,7 @@ func (t *Toystore) AddMember(member Member) {
 func (t *Toystore) RemoveMember(member Member) {
 	if member.Address() != t.rpcAddress() {
 		log.Printf("Removing member %s", member.Name())
-		t.Ring.RemoveString(member.Address())
+		t.Ring.Fail(member.Address())
 	}
 }
 
@@ -160,7 +155,7 @@ func New(config Config) *Toystore {
 		R:                config.R,
 		Host:             config.Host,
 		RPCPort:          config.RPCPort,
-		Ring:             NewRingHead(),
+		Ring:             NewHashRing(),
 		Data:             config.Store,
 
 		client: NewRpcClient(),
@@ -177,8 +172,7 @@ func New(config Config) *Toystore {
 	t.Hints = NewHintedHandoff(config, t.client)
 
 	// Setup new hash ring
-	t.Ring.ReplicationDepth = t.ReplicationLevel
-	t.Ring.AddString(t.rpcAddress())
+	t.Ring.Add(t.rpcAddress())
 
 	// Start RPC server
 	NewRpcHandler(t)

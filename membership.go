@@ -141,5 +141,5 @@ func (m *MemberlistEvents) NotifyLeave(node *memberlist.Node) {
 // NotifyUpdate is called whenever an existing node's data is changed.
 func (m *MemberlistEvents) NotifyUpdate(node *memberlist.Node) {
 	// Nothing to do here so far...
-	log.Printf("Toystore update: %s %s\n", node.Name, string(node.Meta))
+	log.Printf("Toystore update: %s %s\n", node.Name)
 }
