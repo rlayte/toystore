@@ -24,6 +24,9 @@ var Hash func([]byte) []byte = func(bytes []byte) []byte {
 }
 
 type Ring struct {
+	// Number of nodes to use as replicas
+	ReplicationDepth int
+
 	address []byte
 	hash    []byte
 	time    *sync.Mutex
@@ -56,10 +59,6 @@ func (r *Ring) AddressList() []string {
 	}
 	return output
 }
-
-var (
-	ReplicationDepth int = 1
-)
 
 func NewRingHead() *Ring {
 	ring := new(Ring)
@@ -155,7 +154,7 @@ func (r *Ring) KeyAddress(key []byte) func() ([]byte, []byte, error) {
 		defer r.time.Unlock()
 
 		i++
-		if i > ReplicationDepth {
+		if i > r.ReplicationDepth {
 			return nil, nil, errors.New("No more replications.")
 		}
 

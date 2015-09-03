@@ -1,7 +1,6 @@
 package toystore
 
 import (
-	"encoding/gob"
 	"fmt"
 	"log"
 
@@ -9,39 +8,49 @@ import (
 )
 
 type Toystore struct {
-	// Config
+	// Number of nodes to replicate each data item.
 	ReplicationLevel int
-	W                int
-	R                int
 
-	// Internal use
-	Port    int
+	// Number of successful writes required.
+	W int
+
+	// Number of successful reads required.
+	R int
+
+	// Port number to serve client requests.
+	Port int
+
+	// Port number to serve RPC requests between nodes.
 	RPCPort int
-	Host    string
-	Data    Store
-	Ring    *Ring
-	Members Members
-	Hints   *HintedHandoff
 
+	// Host address to bind to.
+	Host string
+
+	// Concrete Store implementation to persist data.
+	Data Store
+
+	// Hash ring for nodes in the cluster.
+	Ring *Ring
+
+	// Concrete Members implementation to represent the current cluster state.
+	Members Members
+
+	// Store of hinted data meant for other nodes.
+	Hints *HintedHandoff
+
+	// Concrete PeerClient implementation to make calls to other nodes.
 	client PeerClient
 }
 
-type ToystoreMetaData struct {
-	Address    string
-	RPCAddress string
-}
-
-func (t *Toystore) Address() string {
-	return fmt.Sprintf("%s:%d", t.Host, t.Port)
-}
-
+// rpcAddress returns a string for the RPC address.
 func (t *Toystore) rpcAddress() string {
 	return fmt.Sprintf("%s:%d", t.Host, t.RPCPort)
 }
 
-// An exposed endpoint to the client.
-// Should function by directing each get or put
-// to the proper machine.
+// Get finds the key on the correct node in the cluster and returns
+// the value and an existence bool.
+// If the key is on the current node then it coordinates the operation.
+// Otherwise it sends the coordination request to the correct node.
 func (t *Toystore) Get(key string) (interface{}, bool) {
 	lookup := t.Ring.KeyAddress([]byte(key))
 	address, _, _ := lookup()
@@ -61,6 +70,10 @@ func (t *Toystore) Get(key string) (interface{}, bool) {
 	}
 }
 
+// Put finds the key on the correct node in the cluster, sets
+// the value and returns a status bool.
+// If the key is owned by current node then it coordinates the operation.
+// Otherwise it sends the coordination request to the correct node.
 func (t *Toystore) Put(key string, value interface{}) (ok bool) {
 	lookup := t.Ring.KeyAddress([]byte(key))
 	address, _, _ := lookup()
@@ -73,23 +86,20 @@ func (t *Toystore) Put(key string, value interface{}) (ok bool) {
 	return
 }
 
-// Just in case you don't want to deal with Interfaces:
+// GetString returns a string of the value for the specified key/value pair.
 func (t *Toystore) GetString(key string) (string, bool) {
 	d, ok := t.Get(key)
 	return d.(string), ok
 }
 
-func (t *Toystore) PutString(key string, value string) bool {
-	return t.Put(key, value) // Just a wrapper, but it gives type checking.
-}
-
+// Merge updates the data object only if its Timestamp is later than the
+// current value.
+// If the key doesn't exist it adds it.
+// Requires Store implementation to be thread safe.
 func (t *Toystore) Merge(data *data.Data) bool {
-	// Only updates the store if the new record is later
-	// Assumes store implementations are thread safe
+	current, ok := t.Data.Get(data.Key)
 
-	current, _ := t.Data.Get(data.Key)
-
-	if data.IsLater(current) {
+	if !ok || data.IsLater(current) {
 		t.Data.Put(data)
 		return true
 	}
@@ -97,8 +107,9 @@ func (t *Toystore) Merge(data *data.Data) bool {
 	return false
 }
 
-// TODO: should use Transfer RPC
+// Transfer sends a list of keys to another node in the cluster.
 func (t *Toystore) Transfer(address string) {
+	// TODO: should use Transfer RPC
 	keys := t.Data.Keys()
 	for _, key := range keys {
 		val, ok := t.Data.Get(key)
@@ -115,6 +126,9 @@ func (t *Toystore) Transfer(address string) {
 	}
 }
 
+// AddMember adds a new node to the hash ring.
+// If the new node is adjacent to the current node then it transfers
+// any keys in its range that should be owned by the new node.
 func (t *Toystore) AddMember(member Member) {
 	log.Printf("%s adding member %s", t.Host, member.Name())
 	t.Ring.AddString(member.Address())
@@ -126,13 +140,18 @@ func (t *Toystore) AddMember(member Member) {
 	}
 }
 
+// RemoveMember removes a member from the hash ring.
 func (t *Toystore) RemoveMember(member Member) {
 	if member.Address() != t.rpcAddress() {
 		log.Printf("%s removing member %s", t.Host, member.Name())
-		t.Ring.RemoveString(member.Address()) // this is causing a problem
+		// TODO: should fail nodes rather than removing them.
+		t.Ring.RemoveString(member.Address())
 	}
 }
 
+// New creates a new Toystore instance using the config variables.
+// It starts the RPC server and gossip protocols to handle node
+// communication between the cluster.
 func New(config Config) *Toystore {
 	t := &Toystore{
 		ReplicationLevel: config.ReplicationLevel,
@@ -147,12 +166,17 @@ func New(config Config) *Toystore {
 		client: NewRpcClient(),
 	}
 
+	// Start new gossip protocol
 	t.Members = NewMemberlist(t, config.SeedAddress)
+
+	// Start hinted handoff scan
 	t.Hints = NewHintedHandoff(config, t.client)
 
-	gob.Register(data.Data{})
-	ReplicationDepth = t.ReplicationLevel
+	// Setup new hash ring
+	t.Ring.ReplicationDepth = t.ReplicationLevel
 	t.Ring.AddString(t.rpcAddress())
+
+	// Start RPC server
 	NewRpcHandler(t)
 
 	return t
