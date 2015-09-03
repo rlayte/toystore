@@ -1,3 +1,8 @@
+// Package toystore is a simple implementation of a Dynamo database -
+// http://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf
+//
+// For more information see the project's readme -
+// https://github.com/rlayte/toystore
 package toystore
 
 import (
