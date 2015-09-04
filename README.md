@@ -1,4 +1,5 @@
 # toystore
+[![GoDoc](https://godoc.org/github.com/rlayte/toystore?status.svg)](https://godoc.org/github.com/rlayte/toystore)
 
 Toystore is an implementation of the [Dynamo](http://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf) distributed database, which relies on an adapted [SWIM](https://www.cs.cornell.edu/~asdas/research/dsn02-swim.pdf) gossip protocol to keep track of cluster membership. 
 
