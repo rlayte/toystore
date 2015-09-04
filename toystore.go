@@ -209,7 +209,9 @@ func (t *Toystore) Transfer(address string) {
 		}
 	}
 
-	t.transferrer.Transfer(address, items)
+	if len(items) > 0 {
+		t.transferrer.Transfer(address, items)
+	}
 }
 
 // AddMember adds a new node to the hash ring.
