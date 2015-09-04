@@ -32,7 +32,7 @@ func host() string {
 
 func startNode(host string) {
 	log.Println("Starting node", host)
-	args := []string{"run", "api/http.go", host}
+	args := []string{"run", "examples/http.go", host}
 	cmd := exec.Command("go", args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	cmd.Stdout = os.Stdout
