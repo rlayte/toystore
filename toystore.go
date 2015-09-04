@@ -10,6 +10,7 @@ import (
 	"log"
 
 	"github.com/rlayte/toystore/data"
+	"github.com/rlayte/toystore/ring"
 )
 
 type Toystore struct {
@@ -32,7 +33,7 @@ type Toystore struct {
 	Data Store
 
 	// Hash ring for nodes in the cluster.
-	Ring *HashRing
+	Ring ring.Ring
 
 	// Concrete Members implementation to represent the current cluster state.
 	Members Members
@@ -155,7 +156,7 @@ func New(config Config) *Toystore {
 		R:                config.R,
 		Host:             config.Host,
 		RPCPort:          config.RPCPort,
-		Ring:             NewHashRing(),
+		Ring:             ring.NewHashRing(),
 		Data:             config.Store,
 
 		client: NewRpcClient(),

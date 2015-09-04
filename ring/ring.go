@@ -1,4 +1,4 @@
-package toystore
+package ring
 
 import (
 	"bytes"
@@ -20,6 +20,15 @@ var Hash func([]byte) []byte = func(bytes []byte) []byte {
 // value of b. Otherwise it returns false.
 func lessThan(a *list.Element, b string) bool {
 	return bytes.Compare([]byte(a.Value.(string)), Hash([]byte(b))) < 1
+}
+
+type Ring interface {
+	Add(member string)
+	Find(key string) (member string)
+	FindN(key string, n int) (members map[string]string)
+	Fail(member string)
+	Revive(member string)
+	Adjacent(a, b string) bool
 }
 
 // HashRing maintains a list of members and their position in the cluster

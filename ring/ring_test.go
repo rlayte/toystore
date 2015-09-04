@@ -1,4 +1,4 @@
-package toystore
+package ring
 
 import (
 	"container/list"
