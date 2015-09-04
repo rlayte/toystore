@@ -1,7 +1,6 @@
 package toystore
 
 import (
-	"log"
 	"time"
 
 	"github.com/hashicorp/memberlist"
@@ -140,7 +139,6 @@ func (m *MemberlistEvents) NotifyLeave(node *memberlist.Node) {
 
 // NotifyUpdate is called whenever an existing node's data is changed.
 func (m *MemberlistEvents) NotifyUpdate(node *memberlist.Node) {
-	log.Printf("Toystore update: %s", node.Name)
 	if node.Meta != nil {
 		member := &MemberlistNode{node}
 		m.toystore.AddMember(member)
