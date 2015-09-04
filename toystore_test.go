@@ -68,6 +68,7 @@ func startCluster() {
 }
 
 func stopCluster() {
+	// TODO: need to defined a Stop method on Toystore
 }
 
 func randomset(t *testing.T, i int) {

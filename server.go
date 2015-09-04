@@ -78,14 +78,11 @@ func (r *RpcHandler) HintPut(args *HintArgs, reply *HintReply) error {
 
 // Transfer adds a set of data to the node.
 func (r *RpcHandler) Transfer(args *TransferArgs, reply *TransferReply) error {
-	ok := true
-
-	// TODO: Should use Merge here to take the latest value.
 	for _, item := range args.Data {
-		r.store.Data.Put(item)
+		r.store.Merge(item)
 	}
 
-	reply.Ok = ok
+	reply.Ok = true
 	return nil
 }
 
