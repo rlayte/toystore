@@ -20,10 +20,6 @@ Dynamo classifies two types of failures: transient and permanent. Transisent fai
 
 Dynamo has the concept of virtual nodes, which allow a single physical host to store multiple key ranges. This has two benefits: spread the nodes over the hash ring more effectively and allow for non-homogenous hosts (e.g. some servers can store more keys than others). As we're testing this locally and therefor don't have different hardware to consider we decided to not implement this feature.
 
-#### Consistent hashing
-
-TODO
-
 ## Setup
 
 We assume you have loopback addresses on `127.0.0.2:127.0.0.24`. If you're running OSX this won't be the case so you'll need add these addresses or use a VM.
