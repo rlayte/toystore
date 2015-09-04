@@ -2,6 +2,7 @@ package toystore
 
 import (
 	"container/list"
+	"fmt"
 	"testing"
 )
 
@@ -30,5 +31,18 @@ func TestRinglessThan(t *testing.T) {
 
 	if lessThan(&list.Element{Value: "a"}, "a") != true {
 		t.Errorf("The same value should return true")
+	}
+}
+
+func TestRingAdd(t *testing.T) {
+	ring := NewHashRing()
+	ring.Add("d")
+	ring.Add("c")
+	ring.Add("e")
+	ring.Add("b")
+	ring.Add("a")
+
+	if fmt.Sprint(ring) != "a, b, c, d, e" {
+		t.Errorf("%s != 'a, b, c, d, e'", ring)
 	}
 }

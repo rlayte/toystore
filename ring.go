@@ -42,7 +42,6 @@ func (h *HashRing) findElement(key string) *list.Element {
 		current = current.Next()
 
 		if current == nil {
-			current = h.list.Front()
 			break
 		}
 	}
@@ -70,7 +69,12 @@ func (h *HashRing) Add(address string) {
 		h.list.PushBack(address)
 	} else {
 		target := h.findElement(address)
-		h.list.InsertBefore(address, target)
+
+		if target != nil {
+			h.list.InsertBefore(address, target)
+		} else {
+			h.list.PushBack(address)
+		}
 	}
 
 	log.Printf("Addded %s. Size: %d", address, h.list.Len())
