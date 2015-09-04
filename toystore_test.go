@@ -2,21 +2,17 @@ package toystore
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"math/rand"
-	"net/http"
-	"net/url"
-	"os"
-	"os/exec"
 	"sync"
-	"syscall"
 	"testing"
 	"time"
+
+	"github.com/rlayte/toystore/store/memory"
 )
 
 var numTests = 100
-var cmds = []*exec.Cmd{}
+var nodes = []*Toystore{}
 var m = &sync.Mutex{}
 var hosts = []string{
 	"127.0.0.2",
@@ -26,21 +22,31 @@ var hosts = []string{
 	"127.0.0.6",
 }
 
-func host() string {
-	return fmt.Sprintf("http://%s:3000", hosts[rand.Intn(len(hosts))])
+func node() *Toystore {
+	return nodes[rand.Intn(len(nodes))]
 }
 
 func startNode(host string) {
 	log.Println("Starting node", host)
-	args := []string{"run", "examples/http.go", host}
-	cmd := exec.Command("go", args...)
-	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	go cmd.Run()
+	seedAddress := "127.0.0.2"
+
+	config := Config{
+		ReplicationLevel: 3,
+		W:                1,
+		R:                1,
+		RPCPort:          3001,
+		Host:             host,
+		Store:            memory.New(),
+	}
+
+	if host != seedAddress {
+		config.SeedAddress = seedAddress
+	}
+
+	node := New(config)
 
 	m.Lock()
-	cmds = append(cmds, cmd)
+	nodes = append(nodes, node)
 	m.Unlock()
 }
 
@@ -61,47 +67,23 @@ func startCluster() {
 }
 
 func stopCluster() {
-	for _, cmd := range cmds {
-		log.Println("Killing", cmd.Process.Pid)
-		pgid, err := syscall.Getpgid(cmd.Process.Pid)
-		if err == nil {
-			syscall.Kill(-pgid, 15) // note the minus sign
-		} else {
-			log.Println("Failed to kill", cmd.Process.Pid)
-		}
-	}
-
 }
 
 func randomset(t *testing.T, i int) {
 	key := fmt.Sprintf("basic-%d", i)
 	value := fmt.Sprintf("basic-value-%d", i)
-	h := host()
-	data := url.Values{"key": {key}, "value": {value}}
-
-	_, err := http.PostForm(h, data)
-
-	if err != nil {
-		t.Error(err)
-	}
+	n := node()
+	n.Put(key, value)
 }
 
 func randomget(t *testing.T, i int) {
-	h := host()
 	key := fmt.Sprintf("basic-%d", i)
-	value := fmt.Sprintf("basic-value-%d", i)
-	resp, err := http.Get(h + "/" + key)
+	expected := fmt.Sprintf("basic-value-%d", i)
+	n := node()
+	actual, _ := n.Get(key)
 
-	if err != nil {
-		t.Fatal("Error", err)
-	}
-
-	defer resp.Body.Close()
-
-	body, err := ioutil.ReadAll(resp.Body)
-
-	if string(body) != value {
-		t.Errorf("%s/%s %s != %s", h, key, string(body), value)
+	if actual != expected {
+		t.Errorf("%s: %s %s != %s", n.Host, key, actual, expected)
 	}
 }
 

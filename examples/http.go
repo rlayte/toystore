@@ -23,7 +23,6 @@ import (
 
 const (
 	SeedAddress string = "127.0.0.2"
-	ClientPort  int    = 3000
 	RpcPort     int    = 3001
 )
 
