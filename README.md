@@ -38,6 +38,10 @@ We've provided an example app in the api package. Run it with:
 
     $ go test
 
+*Note*: we're not cleaning up properly between integration tests yet, so they need to be run individually. E.g.:
+
+    $ go test -run Partitions
+
 ## Admin
 
 If you prefer to use a browser based tool you can run an example admin interface using [rlayte/toystore-admin](https://github.com/rlayte/toystore-admin)
