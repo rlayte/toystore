@@ -42,6 +42,10 @@ func (t *Toystore) CoordinateGet(key string) (*data.Data, bool) {
 		}
 	}
 
+	if reads < t.R {
+		log.Printf("Reads too few %s for %s", reads, key)
+	}
+
 	// TODO: should use data versioning
 	return value, ok && reads >= t.R
 }
@@ -81,6 +85,10 @@ func (t *Toystore) CoordinatePut(value *data.Data) bool {
 				writes++
 			}
 		}
+	}
+
+	if writes < t.W {
+		log.Printf("Writes too few %s for %s", writes, key)
 	}
 
 	return writes >= t.W

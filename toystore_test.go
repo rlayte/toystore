@@ -56,7 +56,7 @@ func startCluster() {
 	}
 
 	log.Println("Waiting for cluster")
-	time.Sleep(time.Second * 30)
+	time.Sleep(time.Second * 15)
 	log.Println("Cluster running")
 }
 
@@ -112,13 +112,13 @@ func TestIntegration__BasicData(t *testing.T) {
 	defer stopCluster()
 
 	for i = 0; i < numTests; i++ {
-		randomset(t, i)
+		go randomset(t, i)
 	}
 
 	time.Sleep(time.Second * 2)
 
 	for i = 0; i < numTests; i++ {
-		randomget(t, i)
+		go randomget(t, i)
 	}
 
 	time.Sleep(time.Second)
