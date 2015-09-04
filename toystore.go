@@ -8,6 +8,7 @@ package toystore
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/rlayte/toystore/data"
 	"github.com/rlayte/toystore/ring"
@@ -48,6 +49,9 @@ type Toystore struct {
 
 	// Concrete Transferrer implementation to transfer data to other nodes.
 	transferrer Transferrer
+
+	// Custom logger. Format: [Toystore] {host}: {statement}
+	log *log.Logger
 }
 
 // rpcAddress returns a string for the RPC address.
@@ -109,7 +113,7 @@ func (t *Toystore) isCoordinator(address string) bool {
 // track of success/failures. If there are more successful reads than config.R
 // it returns the value and true. Otherwise it returns the value and false.
 func (t *Toystore) CoordinateGet(key string) (*data.Data, bool) {
-	log.Printf("Coordinating GET request %s.", key)
+	t.log.Printf("Coordinating GET request %s.", key)
 
 	values := []*data.Data{}
 	nodes := t.Ring.FindN(key, t.ReplicationLevel)
@@ -124,7 +128,7 @@ func (t *Toystore) CoordinateGet(key string) (*data.Data, bool) {
 				reads++
 			}
 		} else {
-			log.Printf("Coordinator retrieving %s", key)
+			t.log.Printf("Coordinator retrieving %s", key)
 			value, ok := t.Data.Get(key)
 
 			if ok {
@@ -153,7 +157,7 @@ func (t *Toystore) CoordinateGet(key string) (*data.Data, bool) {
 // the value on other nodes with a hint to its correct location.
 func (t *Toystore) CoordinatePut(value *data.Data) bool {
 	key := value.Key
-	log.Printf("Coordinating PUT request %v", value)
+	t.log.Printf("Coordinating PUT request %v", value)
 
 	nodes := t.Ring.FindN(key, t.ReplicationLevel)
 	writes := 0
@@ -172,7 +176,7 @@ func (t *Toystore) CoordinatePut(value *data.Data) bool {
 				writes++
 			}
 		} else {
-			log.Printf("Coordinator saving %s", value)
+			t.log.Printf("Coordinator saving %s", value)
 			ok := t.Data.Put(value)
 
 			if ok {
@@ -213,7 +217,7 @@ func (t *Toystore) Transfer(address string) {
 	}
 
 	if len(items) > 0 {
-		log.Printf("Transferring to %s. Ring: %s", address, t.Ring)
+		t.log.Printf("Transferring to %s. Ring: %s", address, t.Ring)
 		t.transferrer.Transfer(address, items)
 	}
 }
@@ -222,7 +226,7 @@ func (t *Toystore) Transfer(address string) {
 // If the new node is adjacent to the current node then it transfers
 // any keys in its range that should be owned by the new node.
 func (t *Toystore) AddMember(member Member) {
-	log.Printf("Adding member %s", member.Name())
+	t.log.Printf("Adding member %s", member.Name())
 	t.Ring.Add(member.Address())
 	localAddress := t.rpcAddress()
 	adjacent := t.Ring.Adjacent(member.Address(), localAddress)
@@ -235,7 +239,7 @@ func (t *Toystore) AddMember(member Member) {
 // RemoveMember removes a member from the hash ring.
 func (t *Toystore) RemoveMember(member Member) {
 	if member.Address() != t.rpcAddress() {
-		log.Printf("Removing member %s", member.Name())
+		t.log.Printf("Removing member %s", member.Name())
 		t.Ring.Fail(member.Address())
 	}
 }
@@ -255,8 +259,8 @@ func New(config Config) *Toystore {
 	}
 
 	// Set all logs to show current host
-	log.SetFlags(0)
-	log.SetPrefix(fmt.Sprintf("[Toystore] %s: ", t.Host))
+	prefix := fmt.Sprintf("[Toystore] %s: ", t.Host)
+	t.log = log.New(os.Stderr, prefix, 0)
 
 	// Initialize RPC client for inter-node communication
 	client := NewRpcClient()

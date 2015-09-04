@@ -2,6 +2,7 @@ package ring
 
 import (
 	"container/list"
+	"crypto/sha256"
 	"fmt"
 	"testing"
 )
@@ -124,15 +125,38 @@ func TestRingAdjacent(t *testing.T) {
 	ring.Add("b")
 	ring.Add("a")
 
+	if ring.Adjacent("c", "b") != true {
+		t.Error("a should be next to b:", ring)
+	}
+
 	if ring.Adjacent("a", "b") != true {
-		t.Error("a should be next to b")
+		t.Error("a should be next to b:", ring)
 	}
 
 	if ring.Adjacent("e", "a") != true {
-		t.Error("e should be next to a")
+		t.Error("e should be next to a:", ring)
 	}
 
 	if ring.Adjacent("a", "d") == true {
-		t.Error("a should not be next to d")
+		t.Error("a should not be next to d:", ring)
+	}
+}
+
+func Test(t *testing.T) {
+	Hash = func(bytes []byte) []byte {
+		hash := sha256.New()
+		hash.Write(bytes)
+		return hash.Sum(nil)
+	}
+	ring := NewHashRing()
+	ring.Add("127.0.0.2")
+	ring.Add("127.0.0.3")
+	ring.Add("127.0.0.4")
+	ring.Add("127.0.0.5")
+	ring.Add("127.0.0.6")
+
+	t.Error("Ring:", ring)
+	Hash = func(bytes []byte) []byte {
+		return bytes
 	}
 }

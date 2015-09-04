@@ -1,7 +1,6 @@
 package toystore
 
 import (
-	"container/ring"
 	"fmt"
 	"log"
 	"math/rand"
@@ -9,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rlayte/toystore/ring"
 	"github.com/rlayte/toystore/store/memory"
 )
 
@@ -24,7 +24,8 @@ var hosts = []string{
 }
 
 func node() *Toystore {
-	return nodes[rand.Intn(len(nodes))]
+	n := nodes[rand.Intn(len(nodes))]
+	return n
 }
 
 func startNode(host string) {
@@ -143,10 +144,14 @@ func TestIntegration__NodeJoins(t *testing.T) {
 }
 
 type PartitionedRing struct {
-	ring *ring.Ring
+	ring ring.Ring
 }
 
 func (r *PartitionedRing) Add(key string) {
+	// noop
+}
+
+func (r *PartitionedRing) ReallyAdd(key string) {
 	r.ring.Add(key)
 }
 
@@ -159,16 +164,49 @@ func (r *PartitionedRing) FindN(key string, n int) map[string]string {
 }
 
 func (r *PartitionedRing) Fail(key string) {
-	return r.ring.Fail(key)
+	r.ring.Fail(key)
 }
 
 func (r *PartitionedRing) Revive(key string) {
-	return r.ring.Revive(key)
+	r.ring.Revive(key)
 }
 
 func (r *PartitionedRing) Adjacent(a, b string) bool {
-	return r.ring.Adjacent(key)
+	return r.ring.Adjacent(a, b)
 }
 
 func TestIntegration__Partitions(t *testing.T) {
+	startCluster()
+	defer stopCluster()
+
+	a := map[string]bool{"127.0.0.3": true, "127.0.0.2": true, "127.0.0.5": true}
+	b := map[string]bool{"127.0.0.4": true, "127.0.0.6": true}
+
+	for _, node := range nodes {
+		if _, ok := a[node.Host]; ok {
+			for host, _ := range b {
+				node.Ring.Fail(host)
+			}
+		}
+
+		if _, ok := b[node.Host]; ok {
+			for host, _ := range a {
+				node.Ring.Fail(host)
+			}
+		}
+	}
+
+	var i int
+
+	for i = 0; i < numTests; i++ {
+		go randomset(t, i)
+	}
+
+	time.Sleep(time.Second * 2)
+
+	for i = 0; i < numTests; i++ {
+		go randomget(t, i)
+	}
+
+	time.Sleep(time.Second)
 }
