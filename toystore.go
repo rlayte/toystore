@@ -111,31 +111,37 @@ func (t *Toystore) isCoordinator(address string) bool {
 func (t *Toystore) CoordinateGet(key string) (*data.Data, bool) {
 	log.Printf("Coordinating GET request %s.", key)
 
-	var value *data.Data
-	var ok bool
-
+	values := []*data.Data{}
 	nodes := t.Ring.FindN(key, t.ReplicationLevel)
 	reads := 0
 
 	for _, address := range nodes {
 		if address != t.rpcAddress() {
-			value, ok = t.client.Get(address, key)
+			value, ok := t.client.Get(address, key)
 
 			if ok {
+				values = append(values, value)
 				reads++
 			}
 		} else {
 			log.Printf("Coordinator retrieving %s", key)
-			value, ok = t.Data.Get(key)
+			value, ok := t.Data.Get(key)
 
 			if ok {
+				values = append(values, value)
 				reads++
 			}
 		}
 	}
 
-	// TODO: should use data versioning
-	return value, ok && reads >= t.R
+	// Add the newest value found to the local database
+	for _, value := range values {
+		t.Merge(value)
+	}
+
+	value, _ := t.Data.Get(key)
+
+	return value, reads >= t.R
 }
 
 // CoordinatePut organizes the put request between the collaborating nodes.
@@ -175,10 +181,6 @@ func (t *Toystore) CoordinatePut(value *data.Data) bool {
 		}
 	}
 
-	if writes < t.W {
-		log.Printf("Writes too few %s for %s", writes, key)
-	}
-
 	return writes >= t.W
 }
 
@@ -211,6 +213,7 @@ func (t *Toystore) Transfer(address string) {
 	}
 
 	if len(items) > 0 {
+		log.Printf("Transferring to %s. Ring: %s", address, t.Ring)
 		t.transferrer.Transfer(address, items)
 	}
 }
@@ -225,7 +228,6 @@ func (t *Toystore) AddMember(member Member) {
 	adjacent := t.Ring.Adjacent(member.Address(), localAddress)
 
 	if adjacent {
-		log.Printf("Transferring data to %s. %s", member.Name(), t.Ring)
 		t.Transfer(member.Address())
 	}
 }
