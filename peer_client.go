@@ -42,7 +42,7 @@ func dial(address string) *rpc.Client {
 	case conn := <-success:
 		return conn
 	case <-time.After(time.Second):
-		panic(err)
+		log.Printf("Failed to dial address: %s", address)
 		return nil
 	}
 }
@@ -50,7 +50,15 @@ func dial(address string) *rpc.Client {
 // call attempts to make an RPC.
 // If the connection fails it returns false, otherwise true.
 func call(address string, method string, args interface{}, reply interface{}) bool {
+	if address == "" {
+		return false
+	}
+
 	conn := dial(address)
+
+	if conn == nil {
+		return false
+	}
 
 	err := conn.Call(method, args, reply)
 	conn.Close()

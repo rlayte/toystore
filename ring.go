@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"container/list"
 	"crypto/sha256"
-	"log"
 	"strings"
 	"sync"
 )
@@ -20,7 +19,7 @@ var Hash func([]byte) []byte = func(bytes []byte) []byte {
 // lessThan returns true is the hashed value of a is less than the hashed
 // value of b. Otherwise it returns false.
 func lessThan(a *list.Element, b string) bool {
-	return bytes.Compare([]byte(a.Value.(string)), Hash([]byte(b))) < 0
+	return bytes.Compare([]byte(a.Value.(string)), Hash([]byte(b))) < 1
 }
 
 // HashRing maintains a list of members and their position in the cluster
@@ -42,6 +41,7 @@ func (h *HashRing) findElement(key string) *list.Element {
 		current = current.Next()
 
 		if current == nil {
+			current = h.list.Front()
 			break
 		}
 	}
@@ -70,20 +70,17 @@ func (h *HashRing) Add(address string) {
 	} else {
 		target := h.findElement(address)
 
-		if target != nil {
-			h.list.InsertBefore(address, target)
-		} else {
+		if lessThan(target, address) {
 			h.list.PushBack(address)
+		} else {
+			h.list.InsertBefore(address, target)
 		}
 	}
-
-	log.Printf("Addded %s. Size: %d", address, h.list.Len())
 }
 
 // Find returns the node that owns the range the key falls within.
 // TODO: Should this return hinted addresses if the node is dead?
 func (h *HashRing) Find(key string) string {
-	log.Printf("Finding address for %s in %s", key, h)
 	element := h.findElement(key)
 
 	if element != nil {
@@ -99,16 +96,25 @@ func (h *HashRing) Find(key string) string {
 // Returns a map where keys are addresses and values are hints. If the key and
 // value are the same then the node is alive.
 func (h *HashRing) FindN(key string, n int) map[string]string {
-	log.Printf("Finding addresses for %s in %s", key, h)
 	target := h.findElement(key)
 	ret := map[string]string{}
+
+	if target == nil {
+		return ret
+	}
 
 	for len(ret) < n {
 		address := target.Value.(string)
 		hint := address
 
 		for h.failed[address] {
-			address = target.Next().Value.(string)
+			next := target.Next()
+
+			if next == nil {
+				next = h.list.Front()
+			}
+
+			address = next.Value.(string)
 		}
 
 		ret[address] = hint
