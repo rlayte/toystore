@@ -46,3 +46,81 @@ func TestRingAdd(t *testing.T) {
 		t.Errorf("%s != 'a, b, c, d, e'", ring)
 	}
 }
+
+func TestRingFind(t *testing.T) {
+	ring := NewHashRing()
+	ring.Add("d")
+	ring.Add("e")
+	ring.Add("b")
+	ring.Add("a")
+
+	if ring.Find("c") != "d" {
+		t.Error("c is located on d")
+	}
+}
+
+func TestRingFindN(t *testing.T) {
+	ring := NewHashRing()
+	ring.Add("d")
+	ring.Add("e")
+	ring.Add("b")
+	ring.Add("a")
+
+	nodes := ring.FindN("c", 3)
+
+	if len(nodes) != 3 {
+		t.Error("FindN should return N keys")
+	}
+
+	for _, key := range []string{"d", "e", "a"} {
+		if _, ok := nodes[key]; !ok {
+			t.Errorf("Nodes should contain %s", key)
+		}
+	}
+}
+
+func TestRingFindNWithFailures(t *testing.T) {
+	ring := NewHashRing()
+	ring.Add("d")
+	ring.Add("e")
+	ring.Add("b")
+	ring.Add("a")
+
+	ring.Fail("d")
+
+	nodes := ring.FindN("c", 3)
+
+	if len(nodes) != 3 {
+		t.Error("FindN should return N keys")
+	}
+
+	if nodes["b"] != "d" {
+		t.Errorf("Hint should have been d, but was %s", nodes["b"])
+	}
+
+	for _, key := range []string{"e", "a", "b"} {
+		if _, ok := nodes[key]; !ok {
+			t.Errorf("Nodes should contain %s", key)
+		}
+	}
+}
+
+func TestRingAdjacent(t *testing.T) {
+	ring := NewHashRing()
+	ring.Add("d")
+	ring.Add("e")
+	ring.Add("b")
+	ring.Add("a")
+
+	if ring.Adjacent("a", "b") != true {
+		t.Error("a should be next to b")
+	}
+
+	if ring.Adjacent("e", "a") != true {
+		t.Error("e should be next to a")
+	}
+
+	if ring.Adjacent("a", "d") == true {
+		t.Error("a should not be next to d")
+	}
+}

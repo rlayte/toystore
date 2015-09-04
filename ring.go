@@ -20,7 +20,7 @@ var Hash func([]byte) []byte = func(bytes []byte) []byte {
 // lessThan returns true is the hashed value of a is less than the hashed
 // value of b. Otherwise it returns false.
 func lessThan(a *list.Element, b string) bool {
-	return bytes.Compare([]byte(a.Value.(string)), Hash([]byte(b))) < 1
+	return bytes.Compare([]byte(a.Value.(string)), Hash([]byte(b))) < 0
 }
 
 // HashRing maintains a list of members and their position in the cluster
@@ -84,7 +84,13 @@ func (h *HashRing) Add(address string) {
 // TODO: Should this return hinted addresses if the node is dead?
 func (h *HashRing) Find(key string) string {
 	log.Printf("Finding address for %s in %s", key, h)
-	return h.findElement(key).Value.(string)
+	element := h.findElement(key)
+
+	if element != nil {
+		return element.Value.(string)
+	} else {
+		return ""
+	}
 }
 
 // FindN returns n alive nodes starting with the closest to the provided key.
@@ -107,6 +113,10 @@ func (h *HashRing) FindN(key string, n int) map[string]string {
 
 		ret[address] = hint
 		target = target.Next()
+
+		if target == nil {
+			target = h.list.Front()
+		}
 	}
 
 	return ret
@@ -114,7 +124,20 @@ func (h *HashRing) FindN(key string, n int) map[string]string {
 
 // Adjacent returns true if the addresses are next to each other in the ring.
 func (h *HashRing) Adjacent(a, b string) bool {
-	return h.findElement(a).Next() == h.findElement(b)
+	nodeA := h.findElement(a)
+	nodeB := h.findElement(b)
+
+	if nodeA != nil {
+		next := nodeA.Next()
+
+		if next == nil {
+			next = h.list.Front()
+		}
+
+		return next == nodeB
+	} else {
+		return false
+	}
 }
 
 // Fail marks member as failed, but doesn't remove it from the ring.
