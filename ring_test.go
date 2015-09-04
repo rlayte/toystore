@@ -86,7 +86,7 @@ func TestRingFindNWithFailures(t *testing.T) {
 	ring.Add("b")
 	ring.Add("a")
 
-	ring.Fail("d")
+	ring.Fail("e")
 
 	nodes := ring.FindN("c", 3)
 
@@ -94,11 +94,11 @@ func TestRingFindNWithFailures(t *testing.T) {
 		t.Error("FindN should return N keys")
 	}
 
-	if nodes["b"] != "d" {
+	if nodes["b"] != "e" {
 		t.Errorf("Hint should have been d, but was %s", nodes["b"])
 	}
 
-	for _, key := range []string{"e", "a", "b"} {
+	for _, key := range []string{"d", "a", "b"} {
 		if _, ok := nodes[key]; !ok {
 			t.Errorf("Nodes should contain %s", key)
 		}
