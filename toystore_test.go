@@ -15,10 +15,10 @@ import (
 	"time"
 )
 
-var numTests int = 100
-var cmds []*exec.Cmd = []*exec.Cmd{}
-var m *sync.Mutex = &sync.Mutex{}
-var hosts []string = []string{
+var numTests = 100
+var cmds = []*exec.Cmd{}
+var m = &sync.Mutex{}
+var hosts = []string{
 	"127.0.0.2",
 	"127.0.0.3",
 	"127.0.0.4",

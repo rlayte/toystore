@@ -14,6 +14,7 @@ import (
 	"github.com/rlayte/toystore/store"
 )
 
+// Toystore represents an individual node in a Toystore cluster.
 type Toystore struct {
 	// Number of nodes to replicate each data item.
 	ReplicationLevel int
@@ -71,9 +72,9 @@ func (t *Toystore) Get(key string) (interface{}, bool) {
 
 	if ok {
 		return data.Value, ok
-	} else {
-		return nil, ok
 	}
+
+	return nil, ok
 }
 
 // Put finds the key on the correct node in the cluster, sets
@@ -221,9 +222,10 @@ func (t *Toystore) AddMember(member Member) {
 	log.Printf("Adding member %s", member.Name())
 	t.Ring.Add(member.Address())
 	localAddress := t.rpcAddress()
-	adjacent := t.Ring.Adjacent(localAddress, member.Address())
+	adjacent := t.Ring.Adjacent(member.Address(), localAddress)
 
 	if adjacent {
+		log.Printf("Transferring data to %s. %s", member.Name(), t.Ring)
 		t.Transfer(member.Address())
 	}
 }
