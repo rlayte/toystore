@@ -27,12 +27,12 @@ We assume you have loopback addresses on `127.0.0.2:127.0.0.24`. If you're runni
 
 ### Run the server
 
-We've provided an example app in the api package. Run it with:
+We've provided an example app in the examples directory. Run it with:
 
     $ # Start the seed node
-    $ go run api/http.go 127.0.0.2
+    $ go run examples/http.go 127.0.0.2
     $ # Start other nodes
-    $ go run api/http.go 127.0.0.{n}
+    $ go run examples/http.go 127.0.0.{n}
 
 ### Testing
 
