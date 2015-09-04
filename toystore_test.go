@@ -179,19 +179,27 @@ func TestIntegration__Partitions(t *testing.T) {
 	startCluster()
 	defer stopCluster()
 
-	a := map[string]bool{"127.0.0.3": true, "127.0.0.2": true, "127.0.0.5": true}
-	b := map[string]bool{"127.0.0.4": true, "127.0.0.6": true}
+	a := map[string]bool{
+		"127.0.0.3": true,
+		"127.0.0.2": true,
+		"127.0.0.5": true,
+	}
+
+	b := map[string]bool{
+		"127.0.0.4": true,
+		"127.0.0.6": true,
+	}
 
 	for _, node := range nodes {
 		if _, ok := a[node.Host]; ok {
 			for host, _ := range b {
-				node.Ring.Fail(host)
+				node.Ring.Fail(host + ":3001")
 			}
 		}
 
 		if _, ok := b[node.Host]; ok {
 			for host, _ := range a {
-				node.Ring.Fail(host)
+				node.Ring.Fail(host + ":3001")
 			}
 		}
 	}

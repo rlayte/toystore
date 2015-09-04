@@ -93,7 +93,19 @@ func (h *HashRing) Find(key string) string {
 	element := h.findElement(key)
 
 	if element != nil {
-		return element.Value.(string)
+		address := element.Value.(string)
+
+		for h.failed[address] {
+			next := element.Next()
+
+			if next == nil {
+				next = h.list.Front()
+			}
+
+			address = next.Value.(string)
+		}
+
+		return address
 	} else {
 		return ""
 	}
