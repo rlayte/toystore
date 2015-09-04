@@ -178,7 +178,21 @@ func TestIntegration__Partitions(t *testing.T) {
 		go randomset(t, i)
 	}
 
-	// TODO: heal the cluster
+	// Heal the cluster
+	for _, node := range nodes {
+		if _, ok := a[node.Host]; ok {
+			for host, _ := range b {
+				node.Ring.Revive(host + ":3001")
+			}
+		}
+
+		if _, ok := b[node.Host]; ok {
+			for host, _ := range a {
+				node.Ring.Revive(host + ":3001")
+			}
+		}
+	}
+
 	time.Sleep(time.Second * 2)
 
 	for i = 0; i < numTests; i++ {

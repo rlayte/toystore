@@ -139,6 +139,10 @@ func (h *HashRing) FindN(key string, n int) map[string]string {
 				}
 			}
 
+			if next == nil {
+				next = h.list.Front()
+			}
+
 			address = next.Value.(string)
 		}
 
