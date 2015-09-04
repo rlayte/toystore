@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/rlayte/toystore/ring"
 	"github.com/rlayte/toystore/store/memory"
 )
 
@@ -141,38 +140,6 @@ func TestIntegration__NodeJoins(t *testing.T) {
 	}
 
 	time.Sleep(time.Second * 2)
-}
-
-type PartitionedRing struct {
-	ring ring.Ring
-}
-
-func (r *PartitionedRing) Add(key string) {
-	// noop
-}
-
-func (r *PartitionedRing) ReallyAdd(key string) {
-	r.ring.Add(key)
-}
-
-func (r *PartitionedRing) Find(key string) string {
-	return r.ring.Find(key)
-}
-
-func (r *PartitionedRing) FindN(key string, n int) map[string]string {
-	return r.ring.FindN(key, n)
-}
-
-func (r *PartitionedRing) Fail(key string) {
-	r.ring.Fail(key)
-}
-
-func (r *PartitionedRing) Revive(key string) {
-	r.ring.Revive(key)
-}
-
-func (r *PartitionedRing) Adjacent(a, b string) bool {
-	return r.ring.Adjacent(a, b)
 }
 
 func TestIntegration__Partitions(t *testing.T) {
