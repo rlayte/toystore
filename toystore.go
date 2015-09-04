@@ -44,6 +44,9 @@ type Toystore struct {
 
 	// Concrete PeerClient implementation to make calls to other nodes.
 	client PeerClient
+
+	// Concrete Transferrer implementation to transfer data to other nodes.
+	transferrer Transferrer
 }
 
 // rpcAddress returns a string for the RPC address.
@@ -122,7 +125,7 @@ func (t *Toystore) Transfer(address string) {
 		}
 	}
 
-	t.client.Transfer(address, items)
+	t.transferrer.Transfer(address, items)
 }
 
 // AddMember adds a new node to the hash ring.
@@ -159,19 +162,22 @@ func New(config Config) *Toystore {
 		RPCPort:          config.RPCPort,
 		Ring:             ring.NewHashRing(),
 		Data:             config.Store,
-
-		client: NewRpcClient(),
 	}
 
 	// Set all logs to show current host
 	log.SetFlags(0)
 	log.SetPrefix(fmt.Sprintf("[Toystore] %s: ", t.Host))
 
+	// Initialize RPC client for inter-node communication
+	client := NewRpcClient()
+	t.client = client
+	t.transferrer = client
+
 	// Start new gossip protocol
 	t.Members = NewMemberlist(t, config.SeedAddress)
 
 	// Start hinted handoff scan
-	t.Hints = NewHintedHandoff(config, t.client)
+	t.Hints = NewHintedHandoff(config, client)
 
 	// Setup new hash ring
 	t.Ring.Add(t.rpcAddress())

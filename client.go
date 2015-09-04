@@ -16,6 +16,11 @@ type PeerClient interface {
 	CoordinateGet(address string, key string) (value *data.Data, status bool)
 	CoordinatePut(address string, value *data.Data) (status bool)
 	HintPut(address string, hint string, value *data.Data) (status bool)
+}
+
+// Transferrer defines the method for transferring blocks of data between
+// nodes.
+type Transferrer interface {
 	Transfer(address string, data []*data.Data) (status bool)
 }
 

@@ -13,7 +13,7 @@ type HintedHandoff struct {
 	ScanInterval time.Duration
 
 	data   map[string][]*data.Data
-	client PeerClient
+	client Transferrer
 }
 
 // scan periodically attempts to transfer hinted data to its correct
@@ -43,7 +43,7 @@ func (h *HintedHandoff) Put(value *data.Data, hint string) {
 
 // NewHintedHandoff returns a new instance and starts the scan process
 // using the HandoffInterval defined in config.
-func NewHintedHandoff(config Config, client PeerClient) *HintedHandoff {
+func NewHintedHandoff(config Config, client Transferrer) *HintedHandoff {
 	h := &HintedHandoff{
 		ScanInterval: config.HandoffInterval,
 		data:         map[string][]*data.Data{},
