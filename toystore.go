@@ -11,6 +11,7 @@ import (
 
 	"github.com/rlayte/toystore/data"
 	"github.com/rlayte/toystore/ring"
+	"github.com/rlayte/toystore/store"
 )
 
 type Toystore struct {
@@ -30,7 +31,7 @@ type Toystore struct {
 	Host string
 
 	// Concrete Store implementation to persist data.
-	Data Store
+	Data store.Store
 
 	// Hash ring for nodes in the cluster.
 	Ring ring.Ring

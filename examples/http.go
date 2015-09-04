@@ -18,7 +18,7 @@ import (
 
 	"github.com/julienschmidt/httprouter"
 	"github.com/rlayte/toystore"
-	"github.com/rlayte/toystore/adapters/memory"
+	"github.com/rlayte/toystore/store/memory"
 )
 
 const (

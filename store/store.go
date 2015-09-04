@@ -1,4 +1,4 @@
-package toystore
+package store
 
 import "github.com/rlayte/toystore/data"
 

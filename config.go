@@ -1,6 +1,10 @@
 package toystore
 
-import "time"
+import (
+	"time"
+
+	"github.com/rlayte/toystore/store"
+)
 
 // Config defines the variables used for a Toystore node.
 type Config struct {
@@ -31,7 +35,7 @@ type Config struct {
 
 	// Store is an implementation of the Store interface the handles persisting
 	// data.
-	Store Store
+	Store store.Store
 
 	// HandoffInterval is the time between scans of the hinted handoff list.
 	HandoffInterval time.Duration
