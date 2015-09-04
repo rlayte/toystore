@@ -19,7 +19,7 @@ var Hash func([]byte) []byte = func(bytes []byte) []byte {
 // lessThan returns true is the hashed value of a is less than the hashed
 // value of b. Otherwise it returns false.
 func lessThan(a *list.Element, b string) bool {
-	return bytes.Compare([]byte(a.Value.(string)), Hash([]byte(b))) < 1
+	return bytes.Compare(Hash([]byte(a.Value.(string))), Hash([]byte(b))) < 1
 }
 
 type Ring interface {

@@ -57,6 +57,18 @@ func TestRingFind(t *testing.T) {
 	if ring.Find("c") != "d" {
 		t.Error("c is located on d")
 	}
+
+	if ring.Find("b") != "d" {
+		t.Error("b is located on d, not", ring.Find("b"))
+	}
+
+	if ring.Find("1") != "a" {
+		t.Error("f is located on a")
+	}
+
+	if ring.Find("f") != "a" {
+		t.Error("f is located on a")
+	}
 }
 
 func TestRingFindN(t *testing.T) {
