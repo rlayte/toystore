@@ -105,7 +105,7 @@ func randomget(t *testing.T, i int) {
 	}
 }
 
-func TestIntegration__BasicData(t *testing.T) {
+func TestIntegration__NoFailures(t *testing.T) {
 	var i int
 
 	startCluster()
@@ -122,4 +122,43 @@ func TestIntegration__BasicData(t *testing.T) {
 	}
 
 	time.Sleep(time.Second)
+}
+
+func TestIntegration__NodeJoins(t *testing.T) {
+	var i int
+
+	startCluster()
+	defer stopCluster()
+
+	for i = 0; i < numTests/2; i++ {
+		go randomset(t, i)
+	}
+
+	// Wait for intial sets to complete
+	time.Sleep(time.Second * 10)
+
+	// Add new nodes
+	startNode("127.0.0.7")
+	startNode("127.0.0.8")
+	startNode("127.0.0.9")
+
+	log.Println("Wait for new nodes to start")
+	time.Sleep(time.Second * 15)
+	hosts = append(hosts, "127.0.0.7")
+	hosts = append(hosts, "127.0.0.8")
+	hosts = append(hosts, "127.0.0.9")
+
+	for i = numTests / 2; i < numTests; i++ {
+		go randomset(t, i)
+	}
+
+	for i = 0; i < numTests; i++ {
+		go randomget(t, i)
+	}
+
+	time.Sleep(time.Second)
+}
+
+func TestIntegration__Partitions(t *testing.T) {
+
 }
