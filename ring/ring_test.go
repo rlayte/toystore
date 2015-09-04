@@ -107,7 +107,7 @@ func TestRingFindNWithFailures(t *testing.T) {
 	}
 
 	if nodes["b"] != "e" {
-		t.Errorf("Hint should have been d, but was %s", nodes["b"])
+		t.Errorf("Hint should have been d, but was %s", nodes)
 	}
 
 	for _, key := range []string{"d", "a", "b"} {

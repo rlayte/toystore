@@ -1,6 +1,7 @@
 package toystore
 
 import (
+	"log"
 	"time"
 
 	"github.com/rlayte/toystore/data"
@@ -21,6 +22,7 @@ type HintedHandoff struct {
 func (h *HintedHandoff) scan() {
 	for {
 		for node, hints := range h.data {
+			log.Println("Handoff", node, hints)
 			ok := h.client.Transfer(node, hints)
 
 			if ok {
@@ -34,6 +36,7 @@ func (h *HintedHandoff) scan() {
 
 // Put adds a new value for the hinted location.
 func (h *HintedHandoff) Put(value *data.Data, hint string) {
+	log.Println("Adding hint", value.Key, hint)
 	if _, ok := h.data[hint]; !ok {
 		h.data[hint] = []*data.Data{}
 	}

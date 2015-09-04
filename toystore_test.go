@@ -157,6 +157,7 @@ func TestIntegration__Partitions(t *testing.T) {
 		"127.0.0.6": true,
 	}
 
+	// Partition the cluster into a / b
 	for _, node := range nodes {
 		if _, ok := a[node.Host]; ok {
 			for host, _ := range b {
@@ -177,6 +178,7 @@ func TestIntegration__Partitions(t *testing.T) {
 		go randomset(t, i)
 	}
 
+	// TODO: heal the cluster
 	time.Sleep(time.Second * 2)
 
 	for i = 0; i < numTests; i++ {
