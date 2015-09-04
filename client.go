@@ -82,7 +82,6 @@ type RpcClient struct {
 // Get makes an RPC to the address to find the specified key and returns
 // the value and an existence bool.
 func (r *RpcClient) Get(address string, key string) (*data.Data, bool) {
-	log.Printf("GET request to %s for %s", address, key)
 	args := &GetArgs{key}
 	reply := &GetReply{}
 
@@ -94,7 +93,6 @@ func (r *RpcClient) Get(address string, key string) (*data.Data, bool) {
 // Put makes an RPC to the address to add the Data value and returns a boolean
 // representing the status of this operation.
 func (r *RpcClient) Put(address string, value *data.Data) bool {
-	log.Printf("PUT request to %s for %v", address, value)
 	args := &PutArgs{value}
 	reply := &PutReply{}
 
@@ -106,7 +104,6 @@ func (r *RpcClient) Put(address string, value *data.Data) bool {
 // CoordinateGet forwards the key to the coordinating node so it can organize
 // the Get operation.
 func (r *RpcClient) CoordinateGet(address string, key string) (*data.Data, bool) {
-	log.Printf("Forwarding GET request to %s for %s", address, key)
 	args := &GetArgs{key}
 	reply := &GetReply{}
 
@@ -118,8 +115,6 @@ func (r *RpcClient) CoordinateGet(address string, key string) (*data.Data, bool)
 // CoordinatePut forwards the Data value to the coordinating node so it can organize
 // the Put operation.
 func (r *RpcClient) CoordinatePut(address string, value *data.Data) bool {
-	log.Printf("Forwarding PUT request to coordinator %s for %s", address, value.Key)
-
 	args := &PutArgs{value}
 	reply := &PutReply{}
 
@@ -130,8 +125,6 @@ func (r *RpcClient) CoordinatePut(address string, value *data.Data) bool {
 
 // HintPut makes an RPC to add hint data to the specified node.
 func (r *RpcClient) HintPut(address string, hint string, data *data.Data) bool {
-	log.Printf("Sending hint to %s for %s (%s)", address, hint, data)
-
 	args := &HintArgs{data, hint}
 	reply := &HintReply{}
 
@@ -142,7 +135,6 @@ func (r *RpcClient) HintPut(address string, hint string, data *data.Data) bool {
 
 // Transfer makes an RPC call to send a set of keys to the specified address.
 func (r *RpcClient) Transfer(address string, data []*data.Data) bool {
-	log.Printf("Transferring data to %s - %v", address, data)
 	args := &TransferArgs{data}
 	reply := &TransferReply{}
 

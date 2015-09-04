@@ -71,7 +71,8 @@ func (t *Toystore) Get(key string) (interface{}, bool) {
 	if t.isCoordinator(address) {
 		data, ok = t.CoordinateGet(key)
 	} else {
-		data, ok = t.client.CoordinateGet(string(address), key)
+		t.log.Printf("Forwarding GET request to %s for %s", address, key)
+		data, ok = t.client.CoordinateGet(address, key)
 	}
 
 	if ok {
@@ -91,7 +92,8 @@ func (t *Toystore) Put(key string, value interface{}) (ok bool) {
 	if t.isCoordinator(address) {
 		ok = t.CoordinatePut(data.New(key, value))
 	} else {
-		ok = t.client.CoordinatePut(string(address), data.New(key, value))
+		t.log.Printf("Forwarding PUT request to coordinator %s for %s", address, value)
+		ok = t.client.CoordinatePut(address, data.New(key, value))
 	}
 	return
 }
@@ -121,6 +123,7 @@ func (t *Toystore) CoordinateGet(key string) (*data.Data, bool) {
 
 	for _, address := range nodes {
 		if address != t.rpcAddress() {
+			t.log.Printf("GET request to %s for %s", address, key)
 			value, ok := t.client.Get(address, key)
 
 			if ok {
@@ -167,8 +170,10 @@ func (t *Toystore) CoordinatePut(value *data.Data) bool {
 			var ok bool
 
 			if hint != address {
+				t.log.Printf("Sending hint to %s for %s (%s)", address, hint, value)
 				ok = t.client.HintPut(address, string(hint), value)
 			} else {
+				t.log.Printf("PUT request to %s for %v", address, value)
 				ok = t.client.Put(address, value)
 			}
 
@@ -217,7 +222,7 @@ func (t *Toystore) Transfer(address string) {
 	}
 
 	if len(items) > 0 {
-		t.log.Printf("Transferring to %s. Ring: %s", address, t.Ring)
+		t.log.Printf("Transferring to %s. Ring: %s", address, t.Ring, items)
 		t.transferrer.Transfer(address, items)
 	}
 }
