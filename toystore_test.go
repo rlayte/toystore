@@ -131,11 +131,8 @@ func TestIntegration__NodeJoins(t *testing.T) {
 	defer stopCluster()
 
 	for i = 0; i < numTests/2; i++ {
-		go randomset(t, i)
+		randomset(t, i)
 	}
-
-	// Wait for intial sets to complete
-	time.Sleep(time.Second * 10)
 
 	// Add new nodes
 	startNode("127.0.0.7")
@@ -144,6 +141,7 @@ func TestIntegration__NodeJoins(t *testing.T) {
 
 	log.Println("Wait for new nodes to start")
 	time.Sleep(time.Second * 15)
+
 	hosts = append(hosts, "127.0.0.7")
 	hosts = append(hosts, "127.0.0.8")
 	hosts = append(hosts, "127.0.0.9")
@@ -152,13 +150,14 @@ func TestIntegration__NodeJoins(t *testing.T) {
 		go randomset(t, i)
 	}
 
+	time.Sleep(time.Second * 2)
+
 	for i = 0; i < numTests; i++ {
 		go randomget(t, i)
 	}
 
-	time.Sleep(time.Second)
+	time.Sleep(time.Second * 2)
 }
 
 func TestIntegration__Partitions(t *testing.T) {
-
 }
